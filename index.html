@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>たこ焼き屋さんゲーム ツール</title>
+<meta name="theme-color" content="#e64a19">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>
   body { font-family: sans-serif; background: #fff3e0; margin: 0; padding: 40px 20px; text-align: center; }
   h1 { color: #e65100; }
@@ -15,5 +21,10 @@
 <h1>たこ焼き屋さんゲーム</h1>
 <a class="card" href="okane.html">💰 お金の計算</a>
 <a class="card" href="saikoro.html">🎲 サイコロ</a>
+<script>
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  navigator.serviceWorker.register('sw.js');
+}
+</script>
 </body>
 </html>
