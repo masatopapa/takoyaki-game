@@ -112,7 +112,14 @@
         margin-top: 20px;
         display: flex;
         align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+        max-width: 95vw;
         gap: 80px; 
+    }
+    /* スマホ幅では間隔を詰めて折り返す（ロゴが画面外に出ないように） */
+    @media (max-width: 760px) {
+        .controls { gap: 14px 24px; }
     }
 
     /* サイコロを振るボタン */
