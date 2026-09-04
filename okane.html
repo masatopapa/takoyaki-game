@@ -519,6 +519,15 @@
   closeDayBtn.addEventListener('click', closeDay);
   document.getElementById('resultCloseBtn').addEventListener('click', function(){ resultOverlay.style.display = 'none'; });
 
+  // ウィンドウやタブを閉じる・再読み込みするときの警告（ゲーム進行中のみ）
+  // ブラウザの仕様で文言は変えられず、ブラウザ固定の「このページを離れますか？」系の表示になる
+  window.addEventListener('beforeunload', function(e){
+    if(players.length === 0) return;
+    e.preventDefault();
+    e.returnValue = 'ゲームのデータが失われます';
+    return 'ゲームのデータが失われます';
+  });
+
   resetBtn.addEventListener('click', function(){
     if(!confirm('ゲームをリセットしますか？全員のデータが失われます。')) return;
     setupArea.style.display = 'flex';
