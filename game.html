@@ -100,14 +100,23 @@
   .masu-box.empty .masu-pic{ display:none; }
   .masu-box.empty .m1{ color:#a87d55; font-weight:normal; }
 
-  /* サイコロへ（材料・売上げカードの上） */
+  /* サイコロへ ＋ コマを戻す（材料・売上げカードの上） */
+  .dice-row{ flex:0 0 auto; display:flex; gap:.8vw; align-items:stretch; }
   .dice-go{
-    flex:0 0 auto; display:flex; align-items:center; justify-content:center; gap:1em;
+    flex:1; display:flex; align-items:center; justify-content:center; gap:1em;
     background:#ff6600; color:#fff; font-weight:bold; border-radius:12px;
     font-size:clamp(17px,1.9vw,26px); padding:.45em 1em; box-shadow:0 4px 0 #bf4d00;
   }
   .dice-go:active{ transform:translateY(3px); box-shadow:0 1px 0 #bf4d00; }
   .dice-go .dg-sub{ font-size:.62em; font-weight:normal; background:rgba(255,255,255,.22); border-radius:999px; padding:.25em .9em; }
+  .koma-back{
+    flex:0 0 auto; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:#8d6e63; color:#fff; font-weight:bold; border-radius:12px; padding:.3em 1.2em;
+    font-size:clamp(13px,1.2vw,17px); line-height:1.25; box-shadow:0 4px 0 #5d4037;
+  }
+  .koma-back:active{ transform:translateY(3px); box-shadow:0 1px 0 #5d4037; }
+  .koma-back:disabled{ opacity:.4; }
+  .koma-back .kb-sub{ font-size:.75em; font-weight:normal; opacity:.9; }
 
   .sec-ttl{ font-size:clamp(12px,1.1vw,15px); font-weight:bold; color:#8a5a3a; margin-bottom:.5vh; display:flex; align-items:center; gap:.4em; flex:0 0 auto; }
 
@@ -249,11 +258,26 @@
     position:absolute; width:9%; aspect-ratio:1 / 1;
     background-image:var(--koma-img); background-size:contain; background-position:center; background-repeat:no-repeat;
     filter:drop-shadow(2px 4px 5px rgba(0,0,0,.4));
-    transition:top .4s ease-in-out, left .4s ease-in-out, transform .45s cubic-bezier(.34,1.56,.64,1);
+    transition:top .4s ease-in-out, left .4s ease-in-out;
     transform:translate(-50%,-50%); z-index:10;
   }
-  /* 止まったときの拡大エフェクト */
-  #koma.zoom{ transform:translate(-50%,-50%) scale(2.6); z-index:30; filter:drop-shadow(4px 8px 10px rgba(0,0,0,.45)); }
+  /* 止まったマスの拡大エフェクト（盤面のそのマスを切り抜いて大きく見せる。コマは下に隠れる） */
+  #masu-zoom{
+    position:absolute; width:11%; aspect-ratio:1 / 1; display:none; z-index:30;
+    transform:translate(-50%,-50%) scale(.6); transition:transform .5s cubic-bezier(.34,1.56,.64,1);
+  }
+  #masu-zoom.zoom{ transform:translate(-50%,-50%) scale(2.6); }
+  #masu-zoom .mz-pic{
+    width:100%; height:100%; border-radius:50%; border:3px solid #ff3333; background-color:#fff;
+    background-image:var(--board-img); background-repeat:no-repeat;
+    box-shadow:0 0 0 2px #fff, 0 6px 16px rgba(0,0,0,.35);
+  }
+  /* ラベルは丸の下端にかぶせる（丸の外に出すと「〇〇の番」や盤面の外と重なる） */
+  #masu-zoom .mz-cap{
+    position:absolute; left:50%; bottom:-4%; transform:translateX(-50%); white-space:nowrap;
+    background:#e64a19; color:#fff; font-weight:bold; font-size:clamp(5px,.75vw,9px);
+    padding:.2em .8em; border-radius:999px; box-shadow:0 1px 3px rgba(0,0,0,.3); border:1px solid #fff;
+  }
   /* 3Dサイコロ */
   .scene{ position:absolute; top:50%; left:50%; width:120px; height:120px; transform:translate(-50%,-50%); perspective:600px; display:none; z-index:20; }
   .cube{ width:100%; height:100%; position:relative; transform-style:preserve-3d; transition:transform 2s ease-out; }
@@ -287,7 +311,7 @@
 
 <header>
   <h1>🐙 たこ焼き屋さんゲーム<span class="h-sub" id="hSub"></span><img class="dao-logo" src="dao-logo.png" alt="マネリテDAO"></h1>
-  <button class="hbtn" id="undoBtn" style="display:none;">🔙 1つ戻る</button>
+  <button class="hbtn" id="undoBtn" style="display:none;">🔙 収支を1つ戻す</button>
   <button class="hbtn" id="closeDayBtn" style="display:none;">🏁 閉店精算</button>
   <button class="hbtn" id="resetBtn" style="display:none;">🔄 リセット</button>
 </header>
@@ -324,7 +348,10 @@
         </div>
       </div>
 
-      <button class="dice-go" id="diceGoBtn">🎲 サイコロへ<span class="dg-sub" id="diceGoSub"></span></button>
+      <div class="dice-row">
+        <button class="dice-go" id="diceGoBtn">🎲 サイコロへ<span class="dg-sub" id="diceGoSub"></span></button>
+        <button class="koma-back" id="komaBackBtn">↩ サイコロのコマを戻す<span class="kb-sub" id="komaBackSub">直前の移動を取り消す</span></button>
+      </div>
 
       <div class="card items-card">
         <div class="sec-ttl">🛒 材料・売上げカード</div>
@@ -395,6 +422,7 @@
     <div id="turn-label"><span class="tl-mark">▶</span><span id="turnName"></span> の番</div>
     <div id="highlight-circle"></div>
     <div id="koma"></div>
+    <div id="masu-zoom"><div class="mz-pic" id="mzPic"></div><div class="mz-cap" id="mzCap"></div></div>
     <div class="scene" id="dice-scene">
       <div class="cube" id="dice">
         <div class="cube__face cube__face--front">⚀</div>
@@ -486,6 +514,7 @@
   var enteredAdvanced = false; // サイコロ画面に入るときに番を進めたか（振る前に戻ったら元に戻す）
   var currentPosition = 0;   // コマの位置
   var lastLanded = null;     // { player, pos, dice }
+  var komaStack = [];        // コマの移動履歴（「サイコロのコマを戻す」用）{ from, to, dice, player, prevLanded }
   var rolling = false;
 
   var setupArea = document.getElementById('setup-area');
@@ -502,6 +531,11 @@
   var masuM2 = document.getElementById('masuM2');
   var diceGoBtn = document.getElementById('diceGoBtn');
   var diceGoSub = document.getElementById('diceGoSub');
+  var komaBackBtn = document.getElementById('komaBackBtn');
+  var komaBackSub = document.getElementById('komaBackSub');
+  var masuZoom = document.getElementById('masu-zoom');
+  var mzPic = document.getElementById('mzPic');
+  var mzCap = document.getElementById('mzCap');
   var minusGridEl = document.getElementById('minusGrid');
   var plusGridEl = document.getElementById('plusGrid');
   var historyListEl = document.getElementById('historyList');
@@ -684,6 +718,31 @@
     if(players.length === 0) return;
     var next = awaitingNext ? (turnIndex + 1) % players.length : turnIndex;
     diceGoSub.textContent = '次は ' + players[next].name + ' の番';
+    komaBackBtn.disabled = komaStack.length === 0;
+    if(komaStack.length){
+      var k = komaStack[komaStack.length - 1];
+      komaBackSub.textContent = players[k.player].name + 'の 🎲' + k.dice + ' を取り消す';
+    } else {
+      komaBackSub.textContent = '直前の移動を取り消す';
+    }
+  }
+
+  // 収支計算側の「サイコロのコマを戻す」：直前の移動を取り消して、同じ人がもう一度振る
+  function komaBack(){
+    if(komaStack.length === 0) return;
+    var k = komaStack[komaStack.length - 1];
+    var info = masuInfo(k.from);
+    if(!confirm(players[k.player].name + 'の サイコロ🎲' + k.dice + ' を取り消して、コマを「' + info.title + '」に戻しますか？\n（もう一度 ' + players[k.player].name + ' が振る番になります。お金の記録はそのままです）')) return;
+    komaStack.pop();
+    currentPosition = k.from;
+    lastLanded = k.prevLanded;
+    turnIndex = k.player;
+    activeIndex = k.player;
+    awaitingNext = false;
+    enteredAdvanced = false;
+    players[k.player].history.push('↩ サイコロのコマを戻した（🎲' + k.dice + ' を取り消し → 「' + info.title + '」へ）');
+    updateKomaPosition();
+    render();
   }
 
   function renderActivePanel(){
@@ -757,7 +816,7 @@
     }
     activeIndex = turnIndex;
     render();
-    koma.classList.remove('zoom');
+    hideMasuZoom();
     rollBtn.disabled = false;
     backBtn.disabled = false;
     showScreen('dice');
@@ -812,6 +871,7 @@
   }
 
   function moveKoma(steps){
+    var from = currentPosition;
     var stepsTaken = 0;
     var moveInterval = setInterval(function(){
       currentPosition = (currentPosition + 1) % pathCoordinates.length;
@@ -819,17 +879,38 @@
       stepsTaken++;
       if(stepsTaken >= steps){
         clearInterval(moveInterval);
-        landed(steps);
+        landed(steps, from);
       }
     }, 450);
   }
 
-  // 止まった：赤丸＋コマ拡大 → 収支計算画面へ
-  function landed(dice){
+  // 止まったマスを盤面から切り抜いて、その場で大きく見せる
+  function showMasuZoom(pos){
+    var c = pathCoordinates[pos];
+    masuZoom.style.left = c.x + '%';
+    masuZoom.style.top = c.y + '%';
+    masuZoom.classList.remove('zoom');
+    masuZoom.style.display = 'block';
+    setMasuPic(mzPic, pos);
+    mzCap.textContent = masuInfo(pos).title;
+    void masuZoom.offsetWidth;   // 表示してから拡大させる（トランジションを効かせる）
+    masuZoom.classList.add('zoom');
+  }
+  function hideMasuZoom(){
+    masuZoom.classList.remove('zoom');
+    masuZoom.style.display = 'none';
+  }
+
+  // 止まった：赤丸 → 止まったマスを拡大 → 収支計算画面へ
+  function landed(dice, from){
     showHighlight(true);
-    setTimeout(function(){ koma.classList.add('zoom'); }, 250);
+    setTimeout(function(){
+      highlightCircle.style.display = 'none';
+      showMasuZoom(currentPosition);
+    }, 300);
     setTimeout(function(){
       var info = masuInfo(currentPosition);
+      komaStack.push({ from: from, to: currentPosition, dice: dice, player: turnIndex, prevLanded: lastLanded });
       lastLanded = { player: turnIndex, pos: currentPosition, dice: dice };
       players[turnIndex].history.push('🎲 ' + dice + 'が出て「' + info.title + '」に止まった');
       awaitingNext = true;
@@ -838,9 +919,8 @@
       activeIndex = turnIndex;
       showScreen('game');
       render();
-      // 次にサイコロ画面を開いたとき拡大したままにならないよう戻す（画面は非表示なので見えない）
-      koma.classList.remove('zoom');
-    }, 1500);
+      hideMasuZoom();
+    }, 1800);
   }
 
   // ===== イベント登録 =====
@@ -864,6 +944,7 @@
   repayBtn.addEventListener('click', repay);
   closeDayBtn.addEventListener('click', closeDay);
   diceGoBtn.addEventListener('click', goDice);
+  komaBackBtn.addEventListener('click', komaBack);
   rollBtn.addEventListener('click', rollDice);
   backBtn.addEventListener('click', diceBack);
   document.getElementById('resultCloseBtn').addEventListener('click', function(){ resultOverlay.style.display = 'none'; });
@@ -883,8 +964,8 @@
     resultOverlay.style.display = 'none';
     players = []; historyStack = []; activeIndex = 0;
     turnIndex = 0; awaitingNext = false; enteredAdvanced = false;
-    currentPosition = 0; lastLanded = null; rolling = false;
-    koma.classList.remove('zoom');
+    currentPosition = 0; lastLanded = null; komaStack = []; rolling = false;
+    hideMasuZoom();
     document.getElementById('player-count-input').value = 4;
     document.getElementById('init-money-input').value = 390;
     showScreen('setup');
@@ -904,7 +985,8 @@
     historyStack = [];
     activeIndex = 0;
     turnIndex = 0; awaitingNext = false; enteredAdvanced = false;
-    currentPosition = 0; lastLanded = null; rolling = false;
+    currentPosition = 0; lastLanded = null; komaStack = []; rolling = false;
+    hideMasuZoom();
     for(var i=0;i<count;i++){
       players.push({ name:'プレイヤー'+(i+1), money:initMoney, debt:0, history:['ゲーム開始！ 所持金'+initMoney+'円です。'] });
     }
