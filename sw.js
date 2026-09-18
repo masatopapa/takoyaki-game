@@ -1,5 +1,5 @@
-const CACHE = 'takoyaki-game-v3';
-const ASSETS = ['./', './index.html', './game.html', './okane.html', './saikoro.html', './manifest.json', './icon-192.png', './icon-512.png', './apple-touch-icon.png', './dao-logo.png'];
+const CACHE = 'takoyaki-game-v4';
+const ASSETS = ['./', './index.html', './browser.html', './game.html', './okane.html', './saikoro.html', './manifest.json', './icon-192.png', './icon-512.png', './apple-touch-icon.png', './dao-logo.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));
