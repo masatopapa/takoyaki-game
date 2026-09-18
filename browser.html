@@ -197,6 +197,15 @@
   .ev-text .ev-row{ display:flex; align-items:center; gap:1em; flex-wrap:wrap; margin-top:.2em; }
   .ev-text .ev-result{ font-size:clamp(12px,1.1vw,15px); color:#2e7d32; font-weight:bold; }
 
+  /* 仕入れ：山札からアクション欄の中央へカードの裏面が飛んできて、めくれる */
+  #dealLayer{ position:fixed; inset:0; pointer-events:none; z-index:40; }
+  .fly{
+    position:absolute; opacity:1; filter:drop-shadow(0 6px 10px rgba(0,0,0,.35));
+    transition:left .55s cubic-bezier(.2,.7,.3,1), top .55s cubic-bezier(.2,.7,.3,1), width .55s cubic-bezier(.2,.7,.3,1), opacity .25s;
+  }
+  .fly .flip-inner{ transition:transform .7s cubic-bezier(.4,.1,.2,1); }
+  .fly.fade{ opacity:0; }
+
   /* てっぱん（下） */
   .teppan-card{ flex:0 0 34vh; min-height:0; display:flex; flex-direction:column; background:#fff7ec; }
   .teppan-cols{ display:flex; gap:1vw; flex:1; min-height:0; }
@@ -429,6 +438,8 @@
   </div>
 </div>
 
+<div id="dealLayer"></div>
+
 <div id="resultOverlay">
   <div class="result-card">
     <h2>🏁 閉店！ 結果発表</h2>
@@ -524,6 +535,7 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
   var deckPile = $('deckPile'), deckCount = $('deckCount'), fieldCount = $('fieldCount'), evPile = $('evPile'), evCount = $('evCount');
   var takoUpBadge = $('takoUpBadge'), maneInfo = $('maneInfo'), borrowBtn = $('borrowBtn'), repayBtn = $('repayBtn'), hokenBtn = $('hokenBtn');
   var actionHead = $('actionHead'), actionBody = $('actionBody');
+  var dealLayer = $('dealLayer'), dealTimers = [];   // 仕入れの「山札→場」アニメ用
   var menuTable = $('menuTable'), menuHint = $('menuHint'), handGrid = $('handGrid'), handTitle = $('handTitle');
   var historyListEl = $('historyList'), undoBtn = $('undoBtn'), resetBtn = $('resetBtn'), closeDayBtn = $('closeDayBtn');
   var resultOverlay = $('resultOverlay'), resultListEl = $('resultList');
@@ -550,8 +562,10 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
   function pushUndo(){ undoStack.push(snapshot()); }
   function undo(){
     if(!undoStack.length) return;
+    cancelDeal();
     restore(undoStack.pop());
     if(phase === 'event' && eventState){ eventState.flipped = true; }   // めくり直しはしない
+    if(phase === 'buy' && buyState){ buyState.dealing = false; }        // 山札→場のアニメもやり直さない
     render();
   }
 
@@ -622,7 +636,8 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
   }
   function startBuy(limit, isFinal){
     var opened = isFinal ? [] : drawMats(limit);
-    buyState = { limit: limit, bought: 0, opened: opened, final: !!isFinal };
+    // dealing: 山札からめくったカードが場へ飛んでくるアニメの最中（renderAction が開始し、終わると false）
+    buyState = { limit: limit, bought: 0, opened: opened, final: !!isFinal, dealing: !isFinal && opened.length > 0, dealAnim: false, departed: 0 };
     phase = 'buy';
     if(!isFinal){
       log(turnIndex, '🛒 山札から' + opened.length + '枚オープン' + (opened.length ? '（' + opened.map(function(i){ return MAT[i].name; }).join('・') + '）' : '（山札がもうない）'));
@@ -836,6 +851,7 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     if(!canKomaBack()) return;
     var k = komaStack[komaStack.length - 1], info = masuInfo(k.from);
     if(!confirm(players[k.player].name + 'の サイコロ🎲' + k.dice + ' を取り消して、コマを「' + info.title + '」に戻しますか？\n（めくったカードは山札にもどし、もう一度 ' + players[k.player].name + ' が振る番になります）')) return;
+    cancelDeal();
     restore(landSnap);            // 着地直後（カードをめくる前）の状態へ
     komaStack.pop();
     if(phase === 'buy' && buyState){ /* restoreでbuyStateはnull */ }
@@ -894,6 +910,37 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     if(opts.onClick) s.addEventListener('click', opts.onClick);
     return s;
   }
+  // 仕入れ：山札の位置からアクション欄の中央へ裏面のまま1枚ずつ飛んで、着いたらめくれる。終わったら通常の仕入れ表を出す
+  function cancelDeal(){ dealTimers.forEach(clearTimeout); dealTimers = []; dealLayer.innerHTML = ''; }
+  function startDealAnim(){
+    cancelDeal();
+    var ids = buyState.opened.slice(), n = ids.length;
+    var src = (deckPile.firstChild || deckPile).getBoundingClientRect(), body = actionBody.getBoundingClientRect();
+    var cw = Math.max(56, Math.min(110, Math.floor((body.height - 12) * 180 / 298)));
+    var gap = Math.round(cw * 0.12), maxW = body.width * 0.9;
+    if(n * cw + (n-1) * gap > maxW) cw = Math.max(40, Math.floor((maxW - (n-1) * gap) / n));
+    var ch = cw * 298 / 180, rowW = n * cw + (n-1) * gap;
+    var x0 = body.left + (body.width - rowW) / 2, y0 = body.top + (body.height - ch) / 2;
+    var STEP = 140, MOVE = 550, FLIP = 700, HOLD = 350;
+    ids.forEach(function(id, i){
+      var el = document.createElement('div'); el.className = 'flip fly';
+      var inner = document.createElement('div'); inner.className = 'flip-inner';
+      inner.appendChild(cardEl('back_mat', 'face back')); inner.appendChild(cardEl(id, 'face front')); el.appendChild(inner);
+      el.style.left = src.left + 'px'; el.style.top = src.top + 'px'; el.style.width = src.width + 'px'; el.style.zIndex = 40 + i;
+      dealLayer.appendChild(el); void el.offsetWidth;   // 出発位置を確定させてから動かす
+      dealTimers.push(setTimeout(function(){
+        el.style.left = (x0 + i * (cw + gap)) + 'px'; el.style.top = y0 + 'px'; el.style.width = cw + 'px';
+        if(buyState && buyState.dealing){ buyState.departed = i + 1; renderDecks(); }
+      }, i * STEP));
+      dealTimers.push(setTimeout(function(){ el.classList.add('flipped'); }, i * STEP + MOVE));
+    });
+    dealTimers.push(setTimeout(function(){
+      if(buyState && buyState.dealing){ buyState.dealing = false; render(); }   // 通常の仕入れ表（場のカード込み）を出す
+      var flies = dealLayer.querySelectorAll('.fly');
+      for(var k=0;k<flies.length;k++) flies[k].classList.add('fade');
+      dealTimers.push(setTimeout(cancelDeal, 260));
+    }, (n-1) * STEP + MOVE + FLIP + HOLD));
+  }
   function sortedCounts(counts, order){
     return Object.keys(counts).filter(function(k){ return counts[k] > 0; }).sort(function(a,b){
       return counts[b] - counts[a] || order.indexOf(a) - order.indexOf(b);
@@ -939,12 +986,14 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
   }
   function renderDecks(){
     deckPile.innerHTML = ''; evPile.innerHTML = '';
-    var n = Math.min(3, deck.length);
+    // アニメ中は、まだ飛び立っていないカードを山札の枚数に含めて見せる（1枚飛ぶごとに減る）
+    var shown = deck.length + (buyState && buyState.dealing ? buyState.opened.length - buyState.departed : 0);
+    var n = Math.min(3, shown);
     for(var i=0;i<n;i++){ var c = cardEl('back_mat'); c.style.top = (-(n-1-i)*3) + 'px'; c.style.left = ((n-1-i)*2) + 'px'; deckPile.appendChild(c); }
-    if(deck.length === 0){ deckPile.style.opacity = .3; deckPile.appendChild(cardEl('back_mat')); } else deckPile.style.opacity = 1;
+    if(shown === 0){ deckPile.style.opacity = .3; deckPile.appendChild(cardEl('back_mat')); } else deckPile.style.opacity = 1;
     var m = Math.min(3, eventDeck.length);
     for(var j=0;j<m;j++){ var e = cardEl('back_event'); e.style.top = (-(m-1-j)*3) + 'px'; e.style.left = ((m-1-j)*2) + 'px'; evPile.appendChild(e); }
-    deckCount.innerHTML = deck.length + '<small>枚</small>';
+    deckCount.innerHTML = shown + '<small>枚</small>';
     fieldCount.innerHTML = field.length + '<small>枚</small>';
     evCount.innerHTML = eventDeck.length + '<small>枚</small>';
     takoUpBadge.style.display = takoUpBy !== null ? '' : 'none';
@@ -960,6 +1009,12 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     function btn(cls, text, fn, dis){ var b = document.createElement('button'); b.className = 'abtn ' + cls; b.innerHTML = text; b.disabled = !!dis; b.addEventListener('click', fn); return b; }
 
     if(phase === 'buy'){
+      if(buyState.dealing){
+        // 山札からカードが飛んでくる間：表はまだ出さず、「何も買わない」も押せない（コマを戻すは押せる）
+        head('🛒 仕入れ：' + esc(p.name), '山札から <b>' + buyState.opened.length + '枚</b> めくっています…', [btn('done', '何も買わない', endBuy, true)]);
+        if(!buyState.dealAnim){ buyState.dealAnim = true; startDealAnim(); }
+        return;
+      }
       var isFinal = buyState.final, left = buyState.limit - buyState.bought;
       head(isFinal ? '🏁 最後の仕入れ：' + esc(p.name) : '🛒 仕入れ：' + esc(p.name),
            isFinal ? '場のカードから1枚だけ買えます（山札はもうありません）' : 'めくったカードと場のカードから、あと <b>' + left + '枚</b> 買えます（お金が足りるカードが光ります）',
@@ -1124,13 +1179,13 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     field = drawMats(2);
     logAll('🃏 山札から2枚を場にオープン（' + field.map(function(i){ return MAT[i].name; }).join('・') + '）。仕入れのときに買えます');
     logAll('⚙ ルール：仕入れの借金券 ' + (options.loan ? 'あり' : 'なし') + '／保険カード ' + (options.hoken ? 'あり' : 'なし'));
-    hideMasuZoom(); updateKomaPosition();
+    hideMasuZoom(); cancelDeal(); updateKomaPosition();
     showScreen('game'); render();
   }
   function resetGame(){
     if(!confirm('ゲームをリセットしますか？全員のデータが失われます。')) return;
     resultOverlay.style.display = 'none';
-    players = []; undoStack = []; komaStack = []; phase = 'idle'; endgame = null; hideMasuZoom();
+    players = []; undoStack = []; komaStack = []; phase = 'idle'; endgame = null; hideMasuZoom(); cancelDeal();
     $('player-count-input').value = 4; $('init-money-input').value = 390;
     showScreen('setup');
   }
