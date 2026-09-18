@@ -322,8 +322,8 @@
     </div>
     <div class="opt-box">
       <h3>🚀 バージョンアップ ルール</h3>
-      <label class="opt"><input type="checkbox" id="optLoan" checked>仕入れに借金券を使える<small>（未返済3枚まで。OFFでもイベントの支払いが足りないときは自動で借りる）</small></label>
-      <label class="opt"><input type="checkbox" id="optHoken" checked>保険カード（50円）<small>（イベント以外のマスに止まったとき買える。テッパン修理を1回ふせぐ）</small></label>
+      <label class="opt"><input type="checkbox" id="optLoan">仕入れに借金券を使える<small>（未返済3枚まで。OFFでもイベントの支払いが足りないときは自動で借りる）</small></label>
+      <label class="opt"><input type="checkbox" id="optHoken">保険カード（50円）<small>（イベント以外のマスに止まったとき買える。テッパン修理を1回ふせぐ）</small></label>
     </div>
     <button class="start-button" id="startBtn">ゲーム開始</button>
     <div class="setup-note">材料カード・イベントカード・てっぱんシートを画面の中で使う版。実物カードは要りません。</div>
@@ -507,7 +507,7 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
   var players = [], activeIndex = 0, turnIndex = 0, awaitingNext = false, enteredAdvanced = false;
   var currentPosition = 0, lastLanded = null, komaStack = [], rolling = false;
   var deck = [], field = [], eventDeck = [], insuranceStock = 0, takoUpBy = null;
-  var options = { loan:true, hoken:true };
+  var options = { loan:false, hoken:false }; // 準備画面のチェックは最初は両方OFF（2026-09-18 本人指定）
   var phase = 'idle';      // idle | buy | event | sell
   var buyState = null;     // { limit, bought, opened:[], final }
   var eventState = null;   // { id, applied }
