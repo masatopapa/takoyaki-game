@@ -477,12 +477,12 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     { id:'crepe',   name:'チーズクレープ（特別メニュー）', price:350,  need:{ kiji:1, cheese:1 }, dev:true }
   ];
   var EVENTS = {
-    sns:     { name:'SNSでバズってお客さんがふえた',   n:4, kind:'plus',   bonus:150, desc:'手元に持っておいて、次にたこ焼きを売るときに自動で使う：売上げ ＋150円' },
+    sns:     { name:'SNSでバズってお客さんがふえた',   n:4, kind:'plus',   bonus:150, desc:'手元に持っておいて、次にたこ焼きを売るときに自動で使う（1品につき1枚）：売上げ ＋150円' },
     repair:  { name:'テッパンが壊れたので修理',         n:4, kind:'minus',  desc:'引いた人が −150円。保険カードを持っていれば払わなくてよい（保険は使い切り）' },
-    regular: { name:'お得意さまができた',               n:3, kind:'plus',   bonus:100, desc:'手元に持っておいて、次にたこ焼きを売るときに自動で使う：売上げ ＋100円' },
+    regular: { name:'お得意さまができた',               n:3, kind:'plus',   bonus:100, desc:'手元に持っておいて、次にたこ焼きを売るときに自動で使う（1品につき1枚）：売上げ ＋100円' },
     dev:     { name:'商品を開発した',                   n:3, kind:'dev',    desc:'チーズクレープ（350円・きじたん＋チーズたん）が売れるようになる' },
     weather: { name:'天気がわるくてお客さんが少ない',   n:3, kind:'minus',  desc:'全員が −40円' },
-    tv:      { name:'テレビに出て話題に',               n:2, kind:'plus',   bonus:200, desc:'手元に持っておいて、次にたこ焼きを売るときに自動で使う：売上げ ＋200円' },
+    tv:      { name:'テレビに出て話題に',               n:2, kind:'plus',   bonus:200, desc:'手元に持っておいて、次にたこ焼きを売るときに自動で使う（1品につき1枚）：売上げ ＋200円' },
     takoup:  { name:'たこが値上がりした',               n:2, kind:'takoup', desc:'全員、1周のあいだ（引いた人の次の番まで）たこたんの仕入れ値が ＋30円' }
   };
   var EVENT_ORDER = ['sns','repair','regular','dev','weather','tv','takoup'];
@@ -690,6 +690,8 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     for(var id in m.need){ short += Math.max(0, m.need[id] - (p.mats[id]||0)); }
     return short <= (p.mats.magic||0);
   }
+  // 履歴用の短い名前：「SNSでバズってお客さんがふえた」→「SNSでバズって」、「テレビに出て話題に」→「テレビに出て」（「て」の無い名前はそのまま）
+  function plusShort(id){ return EVENTS[id].name.replace(/て.*$/, 'て'); }
   function sell(m){
     var p = cur();
     if(phase !== 'sell' || !craftable(p, m)) return;
@@ -701,12 +703,18 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
       var short = m.need[id] - take;
       if(short){ p.mats.magic -= short; used.push('まほうの材料' + (short>1?'×'+short:'') + '→' + MAT[id].name); }
     }
-    var bonus = 0, bonusNames = [];
-    p.plus.forEach(function(e){ bonus += EVENTS[e].bonus; bonusNames.push(EVENTS[e].name.replace(/て.*$/,'') + '+' + EVENTS[e].bonus); });
-    p.plus = [];
+    // プラスのイベントカードは 1品につき1枚、金額の高いものから自動で使う。余りは次のOPENへ持ち越し（2026-09-18 本人指定）
+    var bonus = 0, bonusName = '';
+    if(p.plus.length){
+      var best = 0;
+      for(var bi=1; bi<p.plus.length; bi++){ if(EVENTS[p.plus[bi]].bonus > EVENTS[p.plus[best]].bonus) best = bi; }
+      var pe = p.plus.splice(best, 1)[0];
+      bonus = EVENTS[pe].bonus; bonusName = plusShort(pe) + '+' + bonus;
+    }
     p.money += m.price + bonus;
     sellState.sold += 1;
-    log(activeIndex, '🍳 ' + m.name + 'を売った ＋' + m.price + '円' + (bonus ? '＋イベント' + bonus + '円（' + bonusNames.join('、') + '）' : '') + '　使った材料: ' + used.join('・') + '（残高 ' + yen(p.money) + '）');
+    log(activeIndex, '🍳 ' + m.name + 'を売った ＋' + m.price + '円' + (bonus ? '＋イベント' + bonus + '円（' + bonusName + '）' : '') + '　使った材料: ' + used.join('・')
+      + '（残高 ' + yen(p.money) + '）' + (bonus && p.plus.length ? '　プラスカード のこり' + p.plus.length + '枚' : ''));
     render();
   }
   function endSell(){
@@ -1062,7 +1070,7 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     else if(phase === 'sell'){
       var all = sellState.all, q = sellState.queue;
       head((sellState.final ? '🏁 最後の販売' : (all ? '🎉 OPEN 全員' : '🔥 OPEN')) + '：' + esc(p.name) + (all ? '（' + (sellState.pos+1) + '／' + q.length + '人目）' : ''),
-           '下のてっぱんシートで、材料がそろっているメニューの「売る」を押してください。何品でも売れます。' + (p.plus.length ? '（持っているプラスのイベントカードは最初の販売で自動で使います）' : ''),
+           '下のてっぱんシートで、材料がそろっているメニューの「売る」を押してください。何品でも売れます。' + (p.plus.length ? '（プラスのイベントカードは1品につき1枚、金額の高いものから自動で使います。余った分は次のOPENへ持ち越し）' : ''),
            [btn('skip', sellState.sold ? '売り終わり' + (all && sellState.pos+1 < q.length ? '（次の人へ）' : '') : '売らない' + (all && sellState.pos+1 < q.length ? '（次の人へ）' : ''), endSell)]);
       var lst = document.createElement('div'); lst.className = 'action-idle';
       var can = MENU.filter(function(m){ return craftable(p, m); });
