@@ -183,6 +183,11 @@
   .stack.buyable:active .pcard{ transform:translateY(2px); }
   .stack.dim .pcard{ filter:grayscale(.6) brightness(.85); }
   .buy-grid{ display:flex; gap:1.2vw; align-items:flex-start; flex-wrap:nowrap; padding:.3em .3em 1.6em; overflow-x:auto; overflow-y:hidden; width:100%; }
+  /* 場のカード（仕入れ以外のときもアクション欄の左に出しておく） */
+  .field-wrap{ flex:0 0 auto; display:flex; flex-direction:column; align-self:stretch; min-width:0; }
+  .field-ttl{ flex:0 0 auto; font-size:clamp(10px,.95vw,13px); color:#8a5a3a; font-weight:bold; margin:0 .4em; white-space:nowrap; }
+  .buy-grid.field{ width:auto; }
+  .field-empty{ color:#c2ac80; font-size:clamp(11px,1vw,14px); padding:.6em .4em; }
 
   /* イベントカードめくり */
   .flip-wrap{ display:flex; align-items:center; gap:2vw; margin:auto; width:100%; }
@@ -918,17 +923,43 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     if(opts.onClick) s.addEventListener('click', opts.onClick);
     return s;
   }
+  // カードの幅はアクション欄の高さから決める（重ねた分と値段ラベルを引いて、はみ出さない大きさ）。extra＝さらに引く高さ（見出し分など）
+  function gridCardWidth(stacks, extra){
+    var maxStack = stacks.reduce(function(m, c){ return Math.max(m, c); }, 1);
+    var avail = actionBody.clientHeight - 46 - (extra || 0);
+    return Math.max(56, Math.min(110, Math.floor(avail / (298/180 + 0.16 * (maxStack - 1)))));
+  }
+  // 場のカードの表示（見出し＋重ねたカード）。仕入れ以外のときにアクション欄の左に出す。場が空なら「ありません」
+  function fieldWrapEl(){
+    var w = document.createElement('div'); w.className = 'field-wrap';
+    var t = document.createElement('div'); t.className = 'field-ttl'; t.textContent = '🃏 場のカード（' + field.length + '枚）'; w.appendChild(t);
+    if(!field.length){ var e = document.createElement('div'); e.className = 'field-empty'; e.textContent = 'いまは場にカードがありません'; w.appendChild(e); return w; }
+    var fc = {}; field.forEach(function(id){ fc[id] = (fc[id]||0) + 1; });
+    var fids = sortedCounts(fc, MAT_ORDER);
+    var g = document.createElement('div'); g.className = 'buy-grid field';
+    var cw = gridCardWidth(fids.map(function(id){ return fc[id]; }), 18);
+    fids.forEach(function(id){
+      var price = matPrice(id);
+      g.appendChild(stackEl(id, fc[id], cw, { label: price + '円' + (price !== MAT[id].price ? '（値上がり）' : ''), labelCls: price !== MAT[id].price ? 'price up' : 'price' }));
+    });
+    w.appendChild(g);
+    return w;
+  }
   // 仕入れ：山札の位置からアクション欄の中央へ裏面のまま1枚ずつ飛んで、着いたらめくれる。終わったら通常の仕入れ表を出す
   function cancelDeal(){ dealTimers.forEach(clearTimeout); dealTimers = []; dealLayer.innerHTML = ''; }
   function startDealAnim(){
     cancelDeal();
     var ids = buyState.opened.slice(), n = ids.length;
     var src = (deckPile.firstChild || deckPile).getBoundingClientRect(), body = actionBody.getBoundingClientRect();
+    // 場のカードが左に出ていれば、その右側の空きの中央に着地させる（空きが狭ければ欄全体の中央）
+    var left = body.left, fw = actionBody.querySelector('.field-wrap');
+    if(fw){ var fr = fw.getBoundingClientRect(); if(body.right - fr.right > 220) left = fr.right + 8; }
+    var areaW = body.right - left;
     var cw = Math.max(56, Math.min(110, Math.floor((body.height - 12) * 180 / 298)));
-    var gap = Math.round(cw * 0.12), maxW = body.width * 0.9;
+    var gap = Math.round(cw * 0.12), maxW = areaW * 0.9;
     if(n * cw + (n-1) * gap > maxW) cw = Math.max(40, Math.floor((maxW - (n-1) * gap) / n));
     var ch = cw * 298 / 180, rowW = n * cw + (n-1) * gap;
-    var x0 = body.left + (body.width - rowW) / 2, y0 = body.top + (body.height - ch) / 2;
+    var x0 = left + (areaW - rowW) / 2, y0 = body.top + (body.height - ch) / 2;
     var STEP = 140, MOVE = 550, FLIP = 700, HOLD = 350;
     ids.forEach(function(id, i){
       var el = document.createElement('div'); el.className = 'flip fly';
@@ -1020,6 +1051,7 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
       if(buyState.dealing){
         // 山札からカードが飛んでくる間：表はまだ出さず、「何も買わない」も押せない（コマを戻すは押せる）
         head('🛒 仕入れ：' + esc(p.name), '山札から <b>' + buyState.opened.length + '枚</b> めくっています…', [btn('done', '何も買わない', endBuy, true)]);
+        actionBody.appendChild(fieldWrapEl());   // 場のカードは左に出したまま。飛んでくるカードはその右の空きに着地
         if(!buyState.dealAnim){ buyState.dealAnim = true; startDealAnim(); }
         return;
       }
@@ -1030,11 +1062,7 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
       var counts = poolCounts(), ids = sortedCounts(counts, MAT_ORDER);
       var grid = document.createElement('div'); grid.className = 'buy-grid';
       if(!ids.length){ var e = document.createElement('div'); e.className = 'action-idle'; e.textContent = '買えるカードがありません'; grid.appendChild(e); }
-      // カードの幅はアクション欄の高さから決める（重ねた分と値段ラベルを引いて、はみ出さない大きさ）
-      var maxStack = ids.reduce(function(m, id){ return Math.max(m, counts[id]); }, 1);
-      var avail = actionBody.clientHeight - 46;
-      var cw = Math.floor(avail / (298/180 + 0.16 * (maxStack - 1)));
-      cw = Math.max(56, Math.min(110, cw));
+      var cw = gridCardWidth(ids.map(function(id){ return counts[id]; }), 0);
       ids.forEach(function(id){
         var ok = canBuy(id), price = matPrice(id);
         grid.appendChild(stackEl(id, counts[id], cw, {
@@ -1089,9 +1117,12 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
       actionBody.appendChild(t2);
     }
     else {
-      head('', '');
+      // 待機中：見出しに次にやることを出し、欄には場のカードを最初から見せておく（2026-09-18 本人指定）
+      head(awaitingNext ? esc(players[turnIndex].name) + ' の手番は終わりです' : '「🎲 サイコロへ」を押してサイコロを振ってください',
+           awaitingNext ? '「🎲 サイコロへ」で次の人へ' : '');
+      actionBody.appendChild(fieldWrapEl());
       var idle = document.createElement('div'); idle.className = 'action-idle';
-      idle.innerHTML = awaitingNext ? esc(players[turnIndex].name) + ' の手番は終わりです。<br>「🎲 サイコロへ」で次の人へ' : '「🎲 サイコロへ」を押してサイコロを振ってください';
+      idle.innerHTML = '場のカードは、仕入れのマスに止まったときに<br>めくったカードと一緒に買えます';
       actionBody.appendChild(idle);
     }
   }
