@@ -24,20 +24,30 @@
     background:#fff3e0; color:#333; -webkit-user-select:none; user-select:none;
     display:flex; flex-direction:column; overflow:hidden;
   }
+
+  /* ===== スマホを縦に持ったときの横向き表示 =====
+     画面全体を #app で包み、縦持ちのときは下のスクリプトが .rot を付けて90度回す（本体の回転ロックがONでも横向きになる）。
+     回転中は vw/vh が「回す前の画面」の幅・高さを指してしまうので、長さの単位は #app 基準の cqw/cqh にそろえてある
+     （container-type:size。回転時は cqw＝画面の実際の縦の長さ）。テスト用に ?rot で強制、?norot で回さない */
+  #app{ flex:1 1 auto; min-height:0; width:100%; display:flex; flex-direction:column; overflow:hidden; container-type:size; }
+  #app.rot{
+    position:absolute; left:0; top:0; width:var(--rot-w); height:var(--rot-h);
+    transform:rotate(90deg) translateY(-100%); transform-origin:left top;
+  }
   button{ font-family:inherit; cursor:pointer; border:none; }
   input{ font-family:inherit; }
 
   /* ===== ヘッダー ===== */
   header{
-    background:#e64a19; color:#fff; padding:.7vh 1.2vw; display:flex; align-items:center;
-    gap:.8vw; flex-wrap:wrap; box-shadow:0 2px 6px rgba(0,0,0,.15); flex:0 0 auto;
+    background:#e64a19; color:#fff; padding:.7cqh 1.2cqw; display:flex; align-items:center;
+    gap:.8cqw; flex-wrap:wrap; box-shadow:0 2px 6px rgba(0,0,0,.15); flex:0 0 auto;
   }
-  header h1{ font-size:clamp(15px,1.7vw,24px); font-weight:bold; flex:1; }
+  header h1{ font-size:clamp(15px,1.7cqw,24px); font-weight:bold; flex:1; }
   header h1 .h-sub{ font-size:.8em; font-weight:normal; opacity:.9; margin-left:.4em; }
-  header h1 .dao-logo{ height:clamp(36px,3.6vw,52px); width:auto; vertical-align:middle; margin-left:.6em; }
+  header h1 .dao-logo{ height:clamp(36px,3.6cqw,52px); width:auto; vertical-align:middle; margin-left:.6em; }
   .hbtn{
     background:rgba(255,255,255,.22); color:#fff; font-weight:bold; border-radius:8px;
-    padding:.55em 1.1em; font-size:clamp(12px,1.1vw,16px);
+    padding:.55em 1.1em; font-size:clamp(12px,1.1cqw,16px);
   }
   .hbtn:active{ background:rgba(255,255,255,.4); }
   .hbtn:disabled{ opacity:.4; }
@@ -45,42 +55,42 @@
   /* ===== セットアップ画面 ===== */
   #setup-area{ flex:1; display:flex; align-items:center; justify-content:center; min-height:0; }
   .setup-card{
-    background:#fff; border-radius:16px; padding:3.5vh 3.5vw; text-align:center;
+    background:#fff; border-radius:16px; padding:3.5cqh 3.5cqw; text-align:center;
     box-shadow:0 4px 15px rgba(0,0,0,.08);
   }
-  .setup-card h2{ color:#e64a19; font-size:clamp(18px,2vw,26px); margin-bottom:.9em; }
+  .setup-card h2{ color:#e64a19; font-size:clamp(18px,2cqw,26px); margin-bottom:.9em; }
   .setup-row{ display:flex; align-items:center; justify-content:center; gap:.6em; margin-bottom:1.2em; flex-wrap:wrap; }
-  .setup-row label{ font-weight:bold; font-size:clamp(14px,1.3vw,17px); }
+  .setup-row label{ font-weight:bold; font-size:clamp(14px,1.3cqw,17px); }
   .setup-row input{
-    border:2px solid #ffccbc; border-radius:8px; padding:.5em .6em; font-size:clamp(15px,1.4vw,18px);
+    border:2px solid #ffccbc; border-radius:8px; padding:.5em .6em; font-size:clamp(15px,1.4cqw,18px);
     font-weight:bold; text-align:center; width:6em;
   }
   .start-button{
     background:#ff5722; color:#fff; font-weight:bold; border-radius:10px;
-    padding:.7em 2.2em; font-size:clamp(16px,1.6vw,21px); box-shadow:0 4px 0 #bf360c;
+    padding:.7em 2.2em; font-size:clamp(16px,1.6cqw,21px); box-shadow:0 4px 0 #bf360c;
   }
   .start-button:active{ transform:translateY(3px); box-shadow:0 1px 0 #bf360c; }
-  .setup-note{ color:#a87d55; font-size:clamp(10px,1vw,13px); margin-top:1.4em; }
+  .setup-note{ color:#a87d55; font-size:clamp(10px,1cqw,13px); margin-top:1.4em; }
 
   /* ===== 収支計算画面（ダッシュボード）===== */
-  #game-area{ display:none; flex:1; min-height:0; padding:1.2vh 1.2vw; }
-  .dashboard{ display:flex; gap:1.2vw; width:100%; height:100%; min-height:0; }
-  .main-col{ flex:1 1 68%; min-width:0; display:flex; flex-direction:column; gap:1vh; min-height:0; }
-  .side-col{ flex:0 0 27vw; max-width:520px; display:flex; flex-direction:column; gap:1vh; min-height:0; }
+  #game-area{ display:none; flex:1; min-height:0; padding:1.2cqh 1.2cqw; }
+  .dashboard{ display:flex; gap:1.2cqw; width:100%; height:100%; min-height:0; }
+  .main-col{ flex:1 1 68%; min-width:0; display:flex; flex-direction:column; gap:1cqh; min-height:0; }
+  .side-col{ flex:0 0 27cqw; max-width:520px; display:flex; flex-direction:column; gap:1cqh; min-height:0; }
 
-  .card{ background:#fff; border-radius:14px; box-shadow:0 3px 10px rgba(0,0,0,.07); padding:1vh 1.2vw; }
+  .card{ background:#fff; border-radius:14px; box-shadow:0 3px 10px rgba(0,0,0,.07); padding:1cqh 1.2cqw; }
 
   /* ===== プレイヤー見出し ===== */
-  .player-head{ display:flex; align-items:center; justify-content:center; gap:1.4vw; flex:0 0 auto; flex-wrap:wrap; }
+  .player-head{ display:flex; align-items:center; justify-content:center; gap:1.4cqw; flex:0 0 auto; flex-wrap:wrap; }
   .player-head input.pname{
-    border:2px solid #ffccbc; border-radius:8px; padding:.25em .5em; font-size:clamp(12px,1.1vw,15px);
+    border:2px solid #ffccbc; border-radius:8px; padding:.25em .5em; font-size:clamp(12px,1.1cqw,15px);
     font-weight:bold; text-align:center; color:#d84315; width:7em; background:#fff8f2;
   }
-  .player-head .lbl{ font-size:clamp(9px,.8vw,11px); color:#8a5a3a; font-weight:bold; }
-  .player-head .val{ font-size:clamp(46px,6vw,80px); font-weight:bold; color:#bf360c; line-height:1; }
+  .player-head .lbl{ font-size:clamp(9px,.8cqw,11px); color:#8a5a3a; font-weight:bold; }
+  .player-head .val{ font-size:clamp(46px,6cqw,80px); font-weight:bold; color:#bf360c; line-height:1; }
   .debt-badge{
     background:#efebe9; color:#8a5a3a; border-radius:999px; padding:.4em 1em;
-    font-weight:bold; font-size:clamp(11px,1.1vw,15px);
+    font-weight:bold; font-size:clamp(11px,1.1cqw,15px);
   }
   .debt-badge.has{ background:#7b1fa2; color:#fff; }
 
@@ -90,48 +100,48 @@
     border-radius:14px; padding:.3em .9em .3em .4em; min-height:3.2em;
   }
   .masu-pic{
-    width:clamp(44px,4.8vw,66px); height:clamp(44px,4.8vw,66px); border-radius:50%; flex:0 0 auto;
+    width:clamp(44px,4.8cqw,66px); height:clamp(44px,4.8cqw,66px); border-radius:50%; flex:0 0 auto;
     background-image:var(--board-img); background-repeat:no-repeat; background-color:#fff;
     box-shadow:0 1px 4px rgba(0,0,0,.2); border:2px solid #fff;
   }
   .masu-txt{ display:flex; flex-direction:column; line-height:1.3; }
-  .masu-txt .m1{ font-weight:bold; color:#bf360c; font-size:clamp(12px,1.2vw,17px); }
-  .masu-txt .m2{ color:#8a5a3a; font-size:clamp(10px,.95vw,13px); }
+  .masu-txt .m1{ font-weight:bold; color:#bf360c; font-size:clamp(12px,1.2cqw,17px); }
+  .masu-txt .m2{ color:#8a5a3a; font-size:clamp(10px,.95cqw,13px); }
   .masu-box.empty .masu-pic{ display:none; }
   .masu-box.empty .m1{ color:#a87d55; font-weight:normal; }
 
   /* サイコロへ ＋ コマを戻す（材料・売上げカードの上） */
-  .dice-row{ flex:0 0 auto; display:flex; gap:.8vw; align-items:stretch; }
+  .dice-row{ flex:0 0 auto; display:flex; gap:.8cqw; align-items:stretch; }
   .dice-go{
     flex:1; display:flex; align-items:center; justify-content:center; gap:1em;
     background:#ff6600; color:#fff; font-weight:bold; border-radius:12px;
-    font-size:clamp(17px,1.9vw,26px); padding:.45em 1em; box-shadow:0 4px 0 #bf4d00;
+    font-size:clamp(17px,1.9cqw,26px); padding:.45em 1em; box-shadow:0 4px 0 #bf4d00;
   }
   .dice-go:active{ transform:translateY(3px); box-shadow:0 1px 0 #bf4d00; }
   .dice-go .dg-sub{ font-size:.62em; font-weight:normal; background:rgba(255,255,255,.22); border-radius:999px; padding:.25em .9em; }
   .koma-back{
     flex:0 0 auto; display:flex; flex-direction:column; align-items:center; justify-content:center;
     background:#8d6e63; color:#fff; font-weight:bold; border-radius:12px; padding:.3em 1.2em;
-    font-size:clamp(13px,1.2vw,17px); line-height:1.25; box-shadow:0 4px 0 #5d4037;
+    font-size:clamp(13px,1.2cqw,17px); line-height:1.25; box-shadow:0 4px 0 #5d4037;
   }
   .koma-back:active{ transform:translateY(3px); box-shadow:0 1px 0 #5d4037; }
   .koma-back:disabled{ opacity:.4; }
   .koma-back .kb-sub{ font-size:.75em; font-weight:normal; opacity:.9; }
 
-  .sec-ttl{ font-size:clamp(12px,1.1vw,15px); font-weight:bold; color:#8a5a3a; margin-bottom:.5vh; display:flex; align-items:center; gap:.4em; flex:0 0 auto; }
+  .sec-ttl{ font-size:clamp(12px,1.1cqw,15px); font-weight:bold; color:#8a5a3a; margin-bottom:.5cqh; display:flex; align-items:center; gap:.4em; flex:0 0 auto; }
 
   /* ===== 材料・売上げカード ===== */
   .items-card{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
-  .item-cols{ display:grid; grid-template-columns:1fr 1fr; gap:1.4vw; flex:1; min-height:0; }
+  .item-cols{ display:grid; grid-template-columns:1fr 1fr; gap:1.4cqw; flex:1; min-height:0; }
   .item-col{ display:flex; flex-direction:column; min-height:0; }
-  .item-col h4{ text-align:center; font-size:clamp(11px,1vw,14px); font-weight:bold; margin-bottom:.5vh; flex:0 0 auto; }
+  .item-col h4{ text-align:center; font-size:clamp(11px,1cqw,14px); font-weight:bold; margin-bottom:.5cqh; flex:0 0 auto; }
   .item-col.minus h4{ color:#c62828; }
   .item-col.plus h4{ color:#1565a8; }
-  .item-grid{ display:grid; grid-auto-rows:1fr; gap:.8vh .8vw; flex:1; min-height:0; }
+  .item-grid{ display:grid; grid-auto-rows:1fr; gap:.8cqh .8cqw; flex:1; min-height:0; }
   .item-col.minus .item-grid{ grid-template-columns:repeat(2,1fr); }
   .item-col.plus .item-grid{ grid-template-columns:repeat(3,1fr); }
   .itembtn{
-    color:#fff; font-weight:bold; border-radius:10px; font-size:clamp(12px,1.05vw,16px);
+    color:#fff; font-weight:bold; border-radius:10px; font-size:clamp(12px,1.05cqw,16px);
     line-height:1.3; box-shadow:0 3px 0 var(--sh); transition:transform .05s;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
   }
@@ -143,14 +153,14 @@
 
   /* ===== イベントなど金額調整 ===== */
   .coin-card{ flex:0 0 auto; }
-  .coin-grid{ display:flex; gap:.8vw; }
+  .coin-grid{ display:flex; gap:.8cqw; }
   .coin-block{
-    flex:1; display:flex; align-items:stretch; gap:.5vw;
-    border:3px solid #ffccbc; border-radius:12px; padding:.5vh .5vw; background:#fffaf4;
+    flex:1; display:flex; align-items:stretch; gap:.5cqw;
+    border:3px solid #ffccbc; border-radius:12px; padding:.5cqh .5cqw; background:#fffaf4;
   }
   .coinbtn{
-    flex:1; border-radius:9px; color:#fff; font-weight:bold; font-size:clamp(18px,2.3vw,30px);
-    box-shadow:0 4px 0 var(--sh); transition:transform .05s; min-height:7vh;
+    flex:1; border-radius:9px; color:#fff; font-weight:bold; font-size:clamp(18px,2.3cqw,30px);
+    box-shadow:0 4px 0 var(--sh); transition:transform .05s; min-height:7cqh;
   }
   .coinbtn:active{ transform:translateY(3px); box-shadow:0 1px 0 var(--sh); }
   .coinbtn.plus{ background:#2196F3; --sh:#1565a8; }
@@ -158,15 +168,15 @@
   .coin-label{
     flex:0 0 3.6em; display:flex; align-items:center; justify-content:center;
     background:#fff3e0; border-radius:8px; font-weight:bold; color:#5a3a20;
-    font-size:clamp(14px,1.5vw,20px);
+    font-size:clamp(14px,1.5cqw,20px);
   }
 
   /* ===== 借金コーナー ===== */
   .loan-card{ flex:0 0 auto; }
-  .loan-grid{ display:flex; gap:.8vw; align-items:stretch; }
+  .loan-grid{ display:flex; gap:.8cqw; align-items:stretch; }
   .loanbtn{
-    flex:1; border-radius:9px; color:#fff; font-weight:bold; font-size:clamp(13px,1.3vw,18px);
-    line-height:1.25; box-shadow:0 4px 0 var(--sh); transition:transform .05s; min-height:6.5vh;
+    flex:1; border-radius:9px; color:#fff; font-weight:bold; font-size:clamp(13px,1.3cqw,18px);
+    line-height:1.25; box-shadow:0 4px 0 var(--sh); transition:transform .05s; min-height:6.5cqh;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
   }
   .loanbtn:active{ transform:translateY(3px); box-shadow:0 1px 0 var(--sh); }
@@ -177,40 +187,40 @@
   .loan-status{
     flex:0 0 10em; display:flex; flex-direction:column; align-items:center; justify-content:center;
     background:#f3e5f5; border:2px solid #ce93d8; border-radius:8px; font-weight:bold; color:#4a0072;
-    font-size:clamp(12px,1.2vw,16px); text-align:center; line-height:1.35;
+    font-size:clamp(12px,1.2cqw,16px); text-align:center; line-height:1.35;
   }
 
   /* ===== スコアボード ===== */
   .scoreboard-card{ flex:0 0 auto; }
-  .scoreboard{ display:flex; flex-direction:column; gap:.6vh; }
+  .scoreboard{ display:flex; flex-direction:column; gap:.6cqh; }
   .score-card{
     display:flex; align-items:center; justify-content:space-between; background:#fff3e0; border:2px solid #fff3e0;
-    border-radius:10px; padding:.9vh 1vw; box-shadow:0 1px 4px rgba(0,0,0,.05);
+    border-radius:10px; padding:.9cqh 1cqw; box-shadow:0 1px 4px rgba(0,0,0,.05);
   }
   .score-card.active{ border-color:#e64a19; background:#fff3ea; }
-  .score-card .sc-name{ font-size:clamp(12px,1.05vw,15px); font-weight:bold; color:#8a5a3a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .score-card .sc-name{ font-size:clamp(12px,1.05cqw,15px); font-weight:bold; color:#8a5a3a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .score-card .sc-turn{ font-size:.8em; color:#e64a19; margin-right:.3em; }
-  .score-card .sc-money{ font-size:clamp(14px,1.2vw,17px); font-weight:bold; color:#bf360c; }
-  .score-card .sc-debt{ font-size:clamp(11px,1vw,14px); font-weight:bold; color:#7b1fa2; margin-left:.5em; }
+  .score-card .sc-money{ font-size:clamp(14px,1.2cqw,17px); font-weight:bold; color:#bf360c; }
+  .score-card .sc-debt{ font-size:clamp(11px,1cqw,14px); font-weight:bold; color:#7b1fa2; margin-left:.5em; }
 
   /* ===== 履歴 ===== */
   .history-card{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
-  .history-list{ flex:1; min-height:0; overflow-y:auto; background:#fffde7; border:1px solid #ffe0b2; border-radius:10px; padding:.8vh 1vw; }
-  .history-list p{ font-size:clamp(11px,.95vw,14px); padding:.4em 0; border-bottom:1px dotted #ffe0b2; }
+  .history-list{ flex:1; min-height:0; overflow-y:auto; background:#fffde7; border:1px solid #ffe0b2; border-radius:10px; padding:.8cqh 1cqw; }
+  .history-list p{ font-size:clamp(11px,.95cqw,14px); padding:.4em 0; border-bottom:1px dotted #ffe0b2; }
   .history-list p:last-child{ border-bottom:none; }
-  .history-empty{ color:#c2ac80; font-size:clamp(11px,1vw,14px); text-align:center; padding:1em 0; }
+  .history-empty{ color:#c2ac80; font-size:clamp(11px,1cqw,14px); text-align:center; padding:1em 0; }
 
   /* ===== 閉店結果 ===== */
   #resultOverlay{
     position:fixed; inset:0; background:rgba(0,0,0,.55); display:none;
-    align-items:center; justify-content:center; z-index:50; padding:2vh 2vw;
+    align-items:center; justify-content:center; z-index:50; padding:2cqh 2cqw;
   }
   .result-card{
-    background:#fff; border-radius:16px; padding:3vh 3vw; box-shadow:0 6px 24px rgba(0,0,0,.25);
-    max-width:640px; width:100%; max-height:90vh; overflow-y:auto; text-align:center;
+    background:#fff; border-radius:16px; padding:3cqh 3cqw; box-shadow:0 6px 24px rgba(0,0,0,.25);
+    max-width:640px; width:100%; max-height:90cqh; overflow-y:auto; text-align:center;
   }
-  .result-card h2{ color:#e64a19; font-size:clamp(18px,2vw,26px); margin-bottom:.5em; }
-  .result-note{ color:#a87d55; font-size:clamp(10px,1vw,13px); margin-bottom:1em; }
+  .result-card h2{ color:#e64a19; font-size:clamp(18px,2cqw,26px); margin-bottom:.5em; }
+  .result-note{ color:#a87d55; font-size:clamp(10px,1cqw,13px); margin-bottom:1em; }
   .result-row{
     display:flex; align-items:center; gap:.8em; flex-wrap:wrap; background:#fff3e0;
     border-radius:10px; padding:.7em 1em; margin-bottom:.5em; text-align:left;
@@ -225,12 +235,12 @@
   /* ===== サイコロ画面 ===== */
   #dice-area{
     display:none; flex:1; min-height:0; flex-direction:column; align-items:center; justify-content:center;
-    gap:1.4vh; padding:1vh 1vw;
+    gap:1.4cqh; padding:1cqh 1cqw;
   }
   #board-container{
     position:relative;
     /* 横幅は画面幅・1000px・「縦に収まる幅」のいちばん小さいもの（ヘッダーとボタン分を引く） */
-    width:min(95vw, 1000px, calc((100vh - 150px) * 1.41));
+    width:min(95cqw, 1000px, calc((100cqh - 150px) * 1.41));
     aspect-ratio:1.41 / 1;
     background-image:var(--board-img);
     background-size:100% 100%; background-position:center; background-repeat:no-repeat;
@@ -241,7 +251,7 @@
     position:absolute; left:56%; top:34.6%; transform:translateY(-50%);
     max-width:36%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     background:rgba(255,255,255,.94); border:3px solid #e64a19; color:#bf360c; font-weight:bold;
-    font-size:clamp(13px,2.4vw,26px); padding:.15em .7em; border-radius:999px;
+    font-size:clamp(13px,2.4cqw,26px); padding:.15em .7em; border-radius:999px;
     box-shadow:0 2px 6px rgba(0,0,0,.15); z-index:6;
   }
   #turn-label .tl-mark{ color:#e64a19; margin-right:.25em; }
@@ -275,7 +285,7 @@
   /* ラベルは丸の下端にかぶせる（丸の外に出すと「〇〇の番」や盤面の外と重なる） */
   #masu-zoom .mz-cap{
     position:absolute; left:50%; bottom:-4%; transform:translateX(-50%); white-space:nowrap;
-    background:#e64a19; color:#fff; font-weight:bold; font-size:clamp(5px,.75vw,9px);
+    background:#e64a19; color:#fff; font-weight:bold; font-size:clamp(5px,.75cqw,9px);
     padding:.2em .8em; border-radius:999px; box-shadow:0 1px 3px rgba(0,0,0,.3); border:1px solid #fff;
   }
   /* 3Dサイコロ */
@@ -292,22 +302,36 @@
   .cube__face--bottom { transform:rotateX(-90deg) translateZ(60px); }
   .cube__face--back   { transform:rotateY(180deg) translateZ(60px); }
 
-  .controls{ display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:14px 50px; max-width:95vw; }
+  .controls{ display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:14px 50px; max-width:95cqw; }
   #roll-btn{
-    padding:14px 50px; font-size:clamp(18px,2.2vw,24px); font-weight:bold; background:#ff6600; color:#fff;
+    padding:14px 50px; font-size:clamp(18px,2.2cqw,24px); font-weight:bold; background:#ff6600; color:#fff;
     border-radius:50px; box-shadow:0 6px 10px rgba(0,0,0,.2);
   }
   #roll-btn:active{ background:#e65c00; }
   #roll-btn:disabled{ background:#aaa; cursor:not-allowed; }
   #back-btn{
-    padding:10px 30px; font-size:clamp(15px,1.6vw,18px); background:#999; color:#fff;
+    padding:10px 30px; font-size:clamp(15px,1.6cqw,18px); background:#999; color:#fff;
     border-radius:50px; box-shadow:0 4px 6px rgba(0,0,0,.2);
   }
   #back-btn:active{ background:#777; }
   #back-btn:disabled{ opacity:.5; cursor:not-allowed; }
+
+  /* ===== 画面の高さが小さいとき（スマホの横向き＝縦が390px前後）：ヘッダーを詰めて盤面を大きく ===== */
+  @container (max-height: 520px){
+    header{ padding:.3cqh 1cqw; }
+    header h1{ font-size:14px; }
+    header h1 .dao-logo{ height:26px; }
+    .hbtn{ padding:.35em .8em; font-size:12px; }
+    #dice-area{ gap:.8cqh; padding:.6cqh 1cqw; }
+    #board-container{ width:min(95cqw, 1000px, calc((100cqh - 110px) * 1.41)); }
+    .controls{ gap:8px 30px; }
+    #roll-btn{ padding:8px 36px; }
+    #back-btn{ padding:6px 22px; }
+  }
 </style>
 </head>
 <body>
+<div id="app">
 
 <header>
   <h1>🐙 たこ焼き屋さんゲーム<span class="h-sub" id="hSub"></span><img class="dao-logo" src="dao-logo.png" alt="マネリテDAO"></h1>
@@ -448,6 +472,33 @@
     <button class="start-button" id="resultCloseBtn">とじる</button>
   </div>
 </div>
+
+</div><!-- /#app -->
+
+<script>
+// スマホ・タブレットを縦に持っているときは #app を90度回して横向きに表示する。横向きに持ち直してブラウザ自体が横になれば回転は外れる。
+// URLに ?norot を付けると回さない、?rot で強制（headless Edge のテスト用）。回転中は window.__rot が true
+(function(){
+  var app = document.getElementById('app'), q = location.search;
+  var force = /[?&]rot(&|$)/.test(q), off = /[?&]norot(&|$)/.test(q);
+  function portrait(){
+    var o = screen.orientation && screen.orientation.type;
+    return o ? o.indexOf('portrait') === 0 : window.innerHeight > window.innerWidth;
+  }
+  function touch(){ return (window.matchMedia && matchMedia('(pointer:coarse)').matches) || navigator.maxTouchPoints > 0; }
+  function apply(){
+    var w = window.innerWidth, h = window.innerHeight;
+    var on = !off && (force || (touch() && portrait() && h > w));
+    app.classList.toggle('rot', on);
+    app.style.setProperty('--rot-w', h + 'px'); app.style.setProperty('--rot-h', w + 'px');
+    window.__rot = on;
+  }
+  apply();
+  window.addEventListener('resize', apply);
+  if(screen.orientation && screen.orientation.addEventListener) screen.orientation.addEventListener('change', apply);
+  window.addEventListener('orientationchange', function(){ setTimeout(apply, 100); });
+})();
+</script>
 
 <script>
 (function(){
