@@ -324,6 +324,7 @@
     .hbtn{ padding:.35em .8em; font-size:12px; }
     #dice-area{ gap:.8cqh; padding:.6cqh 1cqw; }
     #board-container{ width:min(95cqw, 1000px, calc((100cqh - 110px) * 1.41)); }
+    #turn-label{ font-size:12px; padding:.1em .5em; border-width:2px; }   /* 盤面が小さいので「▶ プレイヤー1 の番」が入る大きさに */
     .controls{ gap:8px 30px; }
     #roll-btn{ padding:8px 36px; }
     #back-btn{ padding:6px 22px; }
@@ -606,6 +607,7 @@
   var scene = document.getElementById('dice-scene');
   var cube = document.getElementById('dice');
   var turnNameEl = document.getElementById('turnName');
+  var turnLabel = document.getElementById('turn-label');
 
   function yen(n){ return '¥' + Math.round(n).toLocaleString('ja-JP'); }
 
@@ -853,8 +855,18 @@
     highlightCircle.className = pulse ? 'pulse' : '';
   }
 
+  // 「▶ 〇〇 の番」ラベル。スマホだと盤面が小さくて入りきらず「プレイヤ…」になるので、収まるまで文字を小さくする（9pxまで）。
+  // ヘッダーにも同じ名前を出しておく（2026-09-19 本人指摘：何番目か分からない）
   function updateTurnLabel(){
-    turnNameEl.textContent = players[turnIndex] ? players[turnIndex].name : '';
+    var name = players[turnIndex] ? players[turnIndex].name : '';
+    turnNameEl.textContent = name;
+    fitTurnLabel();
+    if(diceArea.style.display !== 'none') hSub.textContent = 'サイコロ ▶ ' + name + ' の番';
+  }
+  function fitTurnLabel(){
+    turnLabel.style.fontSize = '';
+    var size = parseFloat(getComputedStyle(turnLabel).fontSize);
+    while(turnLabel.scrollWidth > turnLabel.clientWidth && size > 9){ size -= 1; turnLabel.style.fontSize = size + 'px'; }
   }
 
   // 「サイコロへ」：振り終わった番なら次の人に回してからサイコロ画面へ
@@ -999,7 +1011,7 @@
   rollBtn.addEventListener('click', rollDice);
   backBtn.addEventListener('click', diceBack);
   document.getElementById('resultCloseBtn').addEventListener('click', function(){ resultOverlay.style.display = 'none'; });
-  window.addEventListener('resize', function(){ if(lastLanded && gameArea.style.display !== 'none') setMasuPic(masuPic, lastLanded.pos); });
+  window.addEventListener('resize', function(){ if(lastLanded && gameArea.style.display !== 'none') setMasuPic(masuPic, lastLanded.pos); fitTurnLabel(); });
 
   // ウィンドウやタブを閉じる・再読み込みするときの警告（ゲーム進行中のみ）
   // ブラウザの仕様で文言は変えられず、ブラウザ固定の「このページを離れますか？」系の表示になる
