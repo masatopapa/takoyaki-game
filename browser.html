@@ -355,6 +355,7 @@
     table.menu td{ padding:.12em .3em; }
     #dice-area{ gap:.8cqh; padding:.6cqh 1cqw; }
     #board-container{ width:min(95cqw, 1000px, calc((100cqh - 110px) * 1.41)); }
+    #turn-label{ font-size:12px; padding:.1em .5em; border-width:2px; }   /* 盤面が小さいので「▶ プレイヤー1 の番」が入る大きさに */
     .controls{ gap:8px 30px; }
     #roll-btn{ padding:8px 36px; }
     #back-btn{ padding:6px 22px; }
@@ -622,7 +623,7 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
   var historyListEl = $('historyList'), undoBtn = $('undoBtn'), resetBtn = $('resetBtn'), closeDayBtn = $('closeDayBtn');
   var resultOverlay = $('resultOverlay'), resultListEl = $('resultList');
   var koma = $('koma'), highlightCircle = $('highlight-circle'), rollBtn = $('roll-btn'), backBtn = $('back-btn');
-  var scene = $('dice-scene'), cube = $('dice'), turnNameEl = $('turnName'), masuZoom = $('masu-zoom'), mzPic = $('mzPic'), mzCap = $('mzCap');
+  var scene = $('dice-scene'), cube = $('dice'), turnNameEl = $('turnName'), turnLabel = $('turn-label'), masuZoom = $('masu-zoom'), mzPic = $('mzPic'), mzCap = $('mzCap');
 
   function yen(n){ return '¥' + Math.round(n).toLocaleString('ja-JP'); }
   function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
@@ -1269,7 +1270,19 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
   // ===== サイコロ画面の部品 =====
   function updateKomaPosition(){ var pos = pathCoordinates[currentPosition]; koma.style.left = pos.x + '%'; koma.style.top = pos.y + '%'; }
   function showHighlight(pulse){ var pos = pathCoordinates[currentPosition]; highlightCircle.style.left = pos.x + '%'; highlightCircle.style.top = pos.y + '%'; highlightCircle.style.display = 'block'; highlightCircle.className = pulse ? 'pulse' : ''; }
-  function updateTurnLabel(){ turnNameEl.textContent = players[turnIndex] ? players[turnIndex].name : ''; }
+  // 「▶ 〇〇 の番」ラベル。スマホだと盤面が小さくて入りきらず「プレイヤ…」になるので、収まるまで文字を小さくする（9pxまで）。
+  // ヘッダーにも同じ名前を出しておく（2026-09-19 本人指摘：何番目か分からない）
+  function updateTurnLabel(){
+    var name = players[turnIndex] ? players[turnIndex].name : '';
+    turnNameEl.textContent = name;
+    fitTurnLabel();
+    if(diceArea.style.display !== 'none') hSub.textContent = 'サイコロ ▶ ' + name + ' の番';
+  }
+  function fitTurnLabel(){
+    turnLabel.style.fontSize = '';
+    var size = parseFloat(getComputedStyle(turnLabel).fontSize);
+    while(turnLabel.scrollWidth > turnLabel.clientWidth && size > 9){ size -= 1; turnLabel.style.fontSize = size + 'px'; }
+  }
   function showMasuZoom(pos){
     var c = pathCoordinates[pos];
     masuZoom.style.left = c.x + '%'; masuZoom.style.top = c.y + '%';
@@ -1328,7 +1341,7 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
   resetBtn.addEventListener('click', resetGame);
   $('startBtn').addEventListener('click', startGame);
   $('resultCloseBtn').addEventListener('click', function(){ resultOverlay.style.display = 'none'; });
-  window.addEventListener('resize', function(){ if(players.length && gameArea.style.display !== 'none') render(); });
+  window.addEventListener('resize', function(){ if(players.length && gameArea.style.display !== 'none') render(); fitTurnLabel(); });
   window.addEventListener('beforeunload', function(e){ if(players.length === 0) return; e.preventDefault(); e.returnValue = 'ゲームのデータが失われます'; return 'ゲームのデータが失われます'; });
 
   showScreen('setup');
