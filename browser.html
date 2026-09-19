@@ -344,7 +344,15 @@
     .deck-box .dk-pile{ width:26px; }
     .mbtn{ font-size:10px; padding:.3em .6em; }
     .action-card{ flex:1.3 1 0; }
-    .action-head{ margin-bottom:.2cqh; }
+    /* アクション欄の見出しは1行に（説明文は…で省略）。3行に膨らんで仕入れ表の場所を食っていた（2026-09-19 本人指摘：場の下が見えない） */
+    .action-head{ margin-bottom:.2cqh; flex-wrap:nowrap; gap:.5em; }
+    .action-head .ah-title{ font-size:13px; white-space:nowrap; }
+    .action-head .ah-sub{ flex:1 1 0; min-width:0; font-size:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .action-head .spacer{ display:none; }
+    .abtn{ font-size:12px; padding:.4em .8em; white-space:nowrap; }
+    /* 仕入れ表を横スクロールの入れ子にしない（スマホで縦スワイプが吸われて欄がスクロールできなくなる）。
+       入りきらなければ折り返し、欄全体（.action-body）がスクロールする。下の余白も詰める（カードの高さは gridCardWidth が欄に合わせる） */
+    .buy-grid{ flex-wrap:wrap; overflow:visible; padding:.2em .3em .4em; }
     .teppan-card{ flex:1 1 0; }
     /* フェーズで配分を変える（render() が .dashboard に ph-〇〇 を付ける）：仕入れ・イベントはカードを見せたいのでアクション欄を広く、
        販売は「売る」ボタンがてっぱんにあるのでてっぱんを広く */
@@ -994,7 +1002,7 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     var s = document.createElement('div');
     s.className = 'stack' + (opts.cls ? ' ' + opts.cls : '');
     s.style.width = widthPx + 'px'; s.style.height = (h + off * (count - 1)) + 'px';
-    s.style.marginBottom = opts.label ? '1.6em' : '.4em';
+    s.style.marginBottom = opts.label ? (compact() ? '1.2em' : '1.6em') : '.4em';   // ラベル（値段・名前）の分
     for(var i=0;i<count;i++){ var c = cardEl(id); c.style.top = (i*off) + 'px'; c.style.width = '100%'; s.appendChild(c); }
     if(count > 1){ var b = document.createElement('span'); b.className = 'cnt'; b.textContent = count; s.appendChild(b); }
     if(opts.label){ var l = document.createElement('span'); l.className = opts.labelCls || 'price'; l.textContent = opts.label; s.appendChild(l); }
@@ -1002,10 +1010,17 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     return s;
   }
   // カードの幅はアクション欄の高さから決める（重ねた分と値段ラベルを引いて、はみ出さない大きさ）。extra＝さらに引く高さ（見出し分など）
+  // 高さが小さい画面（スマホの横向き）か。CSSの @container (max-height:520px) と同じ条件
+  function compact(){ return appEl.clientHeight <= 520; }
+  // 仕入れ表のカード幅：欄の高さに収まる幅（ラベルと余白の分を引く。compact ではラベルの余白が小さいので引く量も小さい）と、
+  // 欄の横幅に n 個並ぶ幅のうち小さい方。スマホでは最小40pxまで小さくして、スクロールしなくても全部見えるようにする
   function gridCardWidth(stacks, extra){
-    var maxStack = stacks.reduce(function(m, c){ return Math.max(m, c); }, 1);
-    var avail = actionBody.clientHeight - 46 - (extra || 0);
-    return Math.max(56, Math.min(110, Math.floor(avail / (298/180 + 0.16 * (maxStack - 1)))));
+    var maxStack = stacks.reduce(function(m, c){ return Math.max(m, c); }, 1), n = stacks.length || 1;
+    var avail = actionBody.clientHeight - (compact() ? 32 : 46) - (extra || 0);
+    var byH = Math.floor(avail / (298/180 + 0.16 * (maxStack - 1)));
+    var gap = Math.round(appEl.clientWidth * 0.012);
+    var byW = Math.floor((actionBody.clientWidth - 16 - (n - 1) * gap) / n);
+    return Math.max(compact() ? 40 : 56, Math.min(110, byH, byW));
   }
   // 場のカードの表示（見出し＋重ねたカード）。仕入れ以外のときにアクション欄の左に出す。場が空なら「ありません」
   function fieldWrapEl(){
@@ -1040,7 +1055,7 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     var left = body.left, fw = actionBody.querySelector('.field-wrap');
     if(fw){ var fr = rectL(fw); if(body.right - fr.right > 220) left = fr.right + 8; }
     var areaW = body.right - left;
-    var cw = Math.max(56, Math.min(110, Math.floor((body.height - 12) * 180 / 298)));
+    var cw = Math.max(compact() ? 40 : 56, Math.min(110, Math.floor((body.height - 12) * 180 / 298)));
     var gap = Math.round(cw * 0.12), maxW = areaW * 0.9;
     if(n * cw + (n-1) * gap > maxW) cw = Math.max(40, Math.floor((maxW - (n-1) * gap) / n));
     var ch = cw * 298 / 180, rowW = n * cw + (n-1) * gap;
