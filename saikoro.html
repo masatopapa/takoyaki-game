@@ -14,8 +14,8 @@
     body, html {
         margin: 0;
         padding: 0;
-        width: 100vw;
-        height: 100vh;
+        width: 100cqw;
+        height: 100cqh;
         background-color: #fef8f0;
         font-family: sans-serif;
         display: flex;
@@ -25,11 +25,24 @@
         overflow: hidden;
     }
 
+    /* ===== スマホを縦に持ったときの横向き表示 =====
+       中身を #app で包み、縦持ちのときは下のスクリプトが .rot を付けて90度回す（本体の回転ロックがONでも横向きになる）。
+       長さの単位は vw/vh ではなく #app 基準の cqw/cqh（container-type:size）。?rot で強制、?norot で回さない。
+       仕組みは tools\takoyaki-game\README.md */
+    #app {
+        flex: 1 1 auto; min-height: 0; width: 100%;
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        overflow: hidden; container-type: size;
+    }
+    #app.rot {
+        position: absolute; left: 0; top: 0; width: var(--rot-w); height: var(--rot-h);
+        transform: rotate(90deg) translateY(-100%); transform-origin: left top;
+    }
+
     /* サイコロシート表示エリア */
     #board-container {
         position: relative;
-        width: 95vw;
-        max-width: 1000px;
+        width: min(95cqw, 1000px, calc((100cqh - 120px) * 1.41));   /* 縦にはみ出さない幅 */
         aspect-ratio: 1.41 / 1; 
 
         /* ▼▼▼ サイコロシートのBase64を貼り付ける場所 ▼▼▼ */
@@ -114,7 +127,7 @@
         align-items: center;
         justify-content: center;
         flex-wrap: wrap;
-        max-width: 95vw;
+        max-width: 95cqw;
         gap: 80px; 
     }
     /* スマホ幅では間隔を詰めて折り返す（ロゴが画面外に出ないように） */
@@ -156,6 +169,7 @@
 </style>
 </head>
 <body>
+<div id="app">
 
 <div id="board-container">
     <div id="highlight-circle"></div>
@@ -177,6 +191,34 @@
     <button id="back-btn">1つ戻る</button>
     <img class="dao-logo" src="dao-logo.png" alt="マネリテDAO">
 </div>
+
+
+</div><!-- /#app -->
+
+<script>
+// スマホ・タブレットを縦に持っているときは #app を90度回して横向きに表示する。横向きに持ち直してブラウザ自体が横になれば回転は外れる。
+// URLに ?norot を付けると回さない、?rot で強制（headless Edge のテスト用）。回転中は window.__rot が true
+(function(){
+  var app = document.getElementById('app'), q = location.search;
+  var force = /[?&]rot(&|$)/.test(q), off = /[?&]norot(&|$)/.test(q);
+  function portrait(){
+    var o = screen.orientation && screen.orientation.type;
+    return o ? o.indexOf('portrait') === 0 : window.innerHeight > window.innerWidth;
+  }
+  function touch(){ return (window.matchMedia && matchMedia('(pointer:coarse)').matches) || navigator.maxTouchPoints > 0; }
+  function apply(){
+    var w = window.innerWidth, h = window.innerHeight;
+    var on = !off && (force || (touch() && portrait() && h > w));
+    app.classList.toggle('rot', on);
+    app.style.setProperty('--rot-w', h + 'px'); app.style.setProperty('--rot-h', w + 'px');
+    window.__rot = on;
+  }
+  apply();
+  window.addEventListener('resize', apply);
+  if(screen.orientation && screen.orientation.addEventListener) screen.orientation.addEventListener('change', apply);
+  window.addEventListener('orientationchange', function(){ setTimeout(apply, 100); });
+})();
+</script>
 
 <script>
     const pathCoordinates = [
