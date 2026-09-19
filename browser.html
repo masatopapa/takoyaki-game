@@ -265,6 +265,21 @@
   .history-list p:last-child{ border-bottom:none; }
   .history-empty{ color:#c2ac80; font-size:clamp(11px,1cqw,14px); text-align:center; padding:1em 0; }
 
+  /* 拡大表示（スマホ用。⊕ボタンは compact のときだけ出す） */
+  .zoom-btn{
+    display:none; margin-left:.35em; width:1.7em; height:1.7em; border-radius:50%; background:#ff6600; color:#fff; font-size:1.15em; line-height:1;
+    align-items:center; justify-content:center; box-shadow:0 2px 0 #bf4d00; flex:0 0 auto; padding:0;
+  }
+  .zoom-btn:active{ transform:translateY(1px); box-shadow:0 1px 0 #bf4d00; }
+  #zoomOverlay{ position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; z-index:45; padding:1.5cqh 1.5cqw; }
+  #zoomOverlay.open{ display:flex; }
+  .zoom-card{ flex:1; min-width:0; min-height:0; background:#fff7ec; border-radius:14px; box-shadow:0 6px 24px rgba(0,0,0,.25); display:flex; flex-direction:column; padding:.8cqh 1.2cqw; }
+  .zoom-head{ display:flex; align-items:center; gap:.8em; flex:0 0 auto; margin-bottom:.5cqh; }
+  .zoom-head .zoom-ttl{ flex:1; min-width:0; font-size:15px; font-weight:bold; color:#8a5a3a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .zoom-body{ flex:1; min-height:0; overflow:auto; padding:.3em .3em 1em; }
+  .zoom-body table.menu{ zoom:1.5; }
+  .zoom-body .hand-grid{ zoom:2.2; }
+
   /* 閉店結果 */
   #resultOverlay{ position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; z-index:50; padding:2cqh 2cqw; }
   .result-card{ background:#fff; border-radius:16px; padding:3cqh 3cqw; box-shadow:0 6px 24px rgba(0,0,0,.25); max-width:640px; width:100%; max-height:90cqh; overflow-y:auto; text-align:center; }
@@ -353,6 +368,7 @@
     /* 仕入れ表を横スクロールの入れ子にしない（スマホで縦スワイプが吸われて欄がスクロールできなくなる）。
        入りきらなければ折り返し、欄全体（.action-body）がスクロールする。下の余白も詰める（カードの高さは gridCardWidth が欄に合わせる） */
     .buy-grid{ flex-wrap:wrap; overflow:visible; padding:.2em .3em .4em; }
+    .zoom-btn{ display:inline-flex; }   /* メニュー・手持ちカードの拡大ボタン（2026-09-19 本人指示：スマホだと見づらくスクロールもしにくい） */
     .teppan-card{ flex:1 1 0; }
     /* フェーズで配分を変える（render() が .dashboard に ph-〇〇 を付ける）：仕入れ・イベントはカードを見せたいのでアクション欄を広く、
        販売は「売る」ボタンがてっぱんにあるのでてっぱんを広く */
@@ -453,11 +469,11 @@
       <div class="card teppan-card">
         <div class="teppan-cols">
           <div class="menu-col">
-            <div class="sec-ttl">🍳 てっぱんシート（メニュー）<span id="menuHint" style="font-weight:normal;color:#a87d55;"></span></div>
+            <div class="sec-ttl">🍳 てっぱんシート（メニュー）<button class="zoom-btn" id="menuZoomBtn" title="大きく表示">⊕</button><span id="menuHint" style="font-weight:normal;color:#a87d55;"></span></div>
             <table class="menu" id="menuTable"></table>
           </div>
           <div class="hand-col">
-            <div class="sec-ttl">🃏 <span id="handTitle">手持ちのカード</span></div>
+            <div class="sec-ttl">🃏 <span id="handTitle">手持ちのカード</span><button class="zoom-btn" id="handZoomBtn" title="大きく表示">⊕</button></div>
             <div class="hand-grid" id="handGrid"></div>
           </div>
         </div>
@@ -502,6 +518,14 @@
 </div>
 
 <div id="dealLayer"></div>
+
+<!-- 拡大表示（スマホ用）：メニュー表／手持ちカードの要素をここに移して大きく見せる。とじると元の場所に戻す -->
+<div id="zoomOverlay">
+  <div class="zoom-card">
+    <div class="zoom-head"><span class="zoom-ttl" id="zoomTitle"></span><button class="abtn skip" id="zoomCloseBtn">✕ とじる</button></div>
+    <div class="zoom-body" id="zoomBody"></div>
+  </div>
+</div>
 
 <div id="resultOverlay">
   <div class="result-card">
@@ -662,6 +686,7 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
 
   // ===== 画面切り替え =====
   function showScreen(name){
+    closeZoom();
     setupArea.style.display = name === 'setup' ? 'flex' : 'none';
     gameArea.style.display  = name === 'game'  ? 'flex' : 'none';
     diceArea.style.display  = name === 'dice'  ? 'flex' : 'none';
@@ -1341,6 +1366,25 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     $('player-count-input').value = 4; $('init-money-input').value = 390;
     showScreen('setup');
   }
+
+  // ===== 拡大表示（スマホ用）=====
+  // メニュー表／手持ちカードの要素そのものをオーバーレイに移して大きく見せる（「売る」ボタンもそのまま押せる）。とじると元の場所に戻す。
+  // 画面が切り替わるとき（showScreen）は自動でとじる
+  var zoomOverlay = $('zoomOverlay'), zoomBody = $('zoomBody'), zoomTitle = $('zoomTitle'), zoomState = null;
+  function openZoom(el, title){
+    if(zoomState) closeZoom();
+    zoomState = { el:el, parent:el.parentNode, next:el.nextSibling };
+    zoomTitle.textContent = title; zoomBody.appendChild(el); zoomOverlay.classList.add('open');
+  }
+  function closeZoom(){
+    if(!zoomState) return;
+    zoomState.parent.insertBefore(zoomState.el, zoomState.next);
+    zoomState = null; zoomOverlay.classList.remove('open');
+  }
+  $('menuZoomBtn').addEventListener('click', function(){ openZoom(menuTable, '🍳 てっぱんシート（メニュー）' + menuHint.textContent); });
+  $('handZoomBtn').addEventListener('click', function(){ openZoom(handGrid, '🃏 ' + handTitle.textContent); });
+  $('zoomCloseBtn').addEventListener('click', closeZoom);
+  zoomOverlay.addEventListener('click', function(e){ if(e.target === zoomOverlay) closeZoom(); });
 
   // ===== イベント登録 =====
   apNameEl.addEventListener('change', function(){ var v = apNameEl.value.trim(); cur().name = v || ('プレイヤー' + (activeIndex+1)); render(); });
