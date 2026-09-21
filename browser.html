@@ -152,7 +152,14 @@
   .mbtn.repay{ background:#2e7d32; --sh:#1b4d1e; }
   .mbtn.hoken{ background:#0288d1; --sh:#01579b; }
   .mbtn small{ display:block; font-weight:normal; font-size:.8em; opacity:.9; }
-  .takoup-badge{ background:#ffe0b2; color:#bf360c; border:2px solid #ffb74d; border-radius:999px; padding:.3em .9em; font-weight:bold; font-size:clamp(10px,1cqw,13px); align-self:center; }
+  /* たこ値上がりのバッジはヘッダーに置く。山札の行に入れていたころは、この1枚が入るだけで
+     マネリテカード置き場が細くなってボタンが縦に折り返し、山札の行が太って場のカードの欄が潰れていた
+     （2026-09-21 本人指摘「タコ値上がり中、カード残りの幅が広がって場が小さくなって見づらい」。
+      スマホ縦持ち＋2トグルONでは 山札の行 92px→395px・アクション欄 106px→3px だった） */
+  .takoup-badge{
+    flex:0 0 auto; white-space:nowrap; background:#ffe0b2; color:#bf360c; border:2px solid #ffb74d;
+    border-radius:999px; padding:.25em .9em; font-weight:bold; font-size:clamp(11px,1.05cqw,15px);
+  }
 
   /* アクションエリア */
   .action-card{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; overflow:hidden; }
@@ -202,18 +209,12 @@
   .buy-grid.field{ width:auto; }
   .field-empty{ color:#c2ac80; font-size:clamp(11px,1cqw,14px); padding:.6em .4em; }
 
-  /* イベントカードめくり */
-  .flip-wrap{ display:flex; align-items:center; gap:2cqw; margin:auto; width:100%; }
+  /* イベントカードめくり（表示は #eventOverlay の大画面。.fly のめくりでも使う） */
   .flip{ flex:0 0 auto; aspect-ratio:var(--card-w)/var(--card-h); perspective:900px; }
   .flip-inner{ position:relative; width:100%; height:100%; transform-style:preserve-3d; transition:transform .9s cubic-bezier(.4,.1,.2,1); }
   .flip.flipped .flip-inner{ transform:rotateY(180deg); }
   .flip .face{ position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden; }
   .flip .face.front{ transform:rotateY(180deg); }
-  .ev-text{ flex:1; min-width:0; display:flex; flex-direction:column; gap:.4em; }
-  .ev-text .ev-name{ font-size:clamp(15px,1.5cqw,21px); font-weight:bold; color:#bf360c; }
-  .ev-text .ev-desc{ font-size:clamp(12px,1.1cqw,15px); color:#5a3a20; line-height:1.45; }
-  .ev-text .ev-row{ display:flex; align-items:center; gap:1em; flex-wrap:wrap; margin-top:.2em; }
-  .ev-text .ev-result{ font-size:clamp(12px,1.1cqw,15px); color:#2e7d32; font-weight:bold; }
 
   /* 仕入れ：山札からアクション欄の中央へカードの裏面が飛んできて、めくれる */
   #dealLayer{ position:fixed; inset:0; pointer-events:none; z-index:40; }
@@ -274,6 +275,10 @@
     align-items:center; justify-content:center; box-shadow:0 2px 0 #bf4d00; flex:0 0 auto; padding:0;
   }
   .zoom-btn:active{ transform:translateY(1px); box-shadow:0 1px 0 #bf4d00; }
+  /* タブレットは画面が大きくて compact（max-height:520px）に入らないので ⊕ が出なかった（2026-09-21 本人指摘）。
+     指で操作する端末（pointer:coarse）なら画面の大きさに関係なく出す。マウス・トラックパッドのPCは pointer:fine なので出ない
+     （タッチパネル付きのノートPCも、主ポインタがトラックパッドなら fine） */
+  @media (pointer:coarse){ .zoom-btn{ display:inline-flex; } }
   #zoomOverlay{ position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; z-index:45; padding:1.5cqh 1.5cqw; }
   #zoomOverlay.open{ display:flex; }
   .zoom-card{ flex:1; min-width:0; min-height:0; background:#fff7ec; border-radius:14px; box-shadow:0 6px 24px rgba(0,0,0,.25); display:flex; flex-direction:column; padding:.8cqh 1.2cqw; }
@@ -282,6 +287,22 @@
   .zoom-body{ flex:1; min-height:0; overflow:auto; padding:.3em .3em 1em; }
   .zoom-body table.menu{ zoom:1.5; }
   .zoom-body .hand-grid{ zoom:2.2; }
+
+  /* イベントカードの大画面表示（2026-09-21 本人指示「表示内容が小さくてわかりにくい。一旦大画面で出して、
+     受け取るボタンを押して再開」）。めくり（裏→表）もここでやる。「🎁 受け取る」で効果 →「次へ」でとじる */
+  #eventOverlay{ position:fixed; inset:0; background:rgba(0,0,0,.62); display:none; align-items:center; justify-content:center; z-index:48; padding:2cqh 2cqw; }
+  #eventOverlay.open{ display:flex; }
+  .ev-big-card{
+    background:#fff8f2; border-radius:18px; box-shadow:0 8px 30px rgba(0,0,0,.35); padding:2.5cqh 3cqw;
+    display:flex; align-items:center; gap:3cqw; max-width:1100px; width:100%;
+  }
+  .ev-big-card .flip{ flex:0 0 auto; height:min(66cqh, 430px); width:auto; }
+  .ev-big-side{ flex:1; min-width:0; display:flex; flex-direction:column; gap:1.4cqh; }
+  .ev-big-name{ font-size:clamp(19px,2.7cqw,38px); font-weight:bold; color:#bf360c; line-height:1.25; }
+  .ev-big-desc{ font-size:clamp(14px,1.7cqw,24px); color:#5a3a20; line-height:1.5; }
+  .ev-big-result{ font-size:clamp(14px,1.8cqw,25px); font-weight:bold; color:#2e7d32; background:#fff; border:2px solid #a5d6a7; border-radius:12px; padding:.5em .8em; }
+  .ev-big-btns{ display:flex; align-items:center; gap:1.5cqw; flex-wrap:wrap; }
+  .ev-big-btns .abtn{ font-size:clamp(16px,1.9cqw,26px); padding:.6em 1.8em; }
 
   /* 閉店結果 */
   #resultOverlay{ position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; z-index:50; padding:2cqh 2cqw; }
@@ -337,9 +358,15 @@
   .cube__face--bottom { transform:rotateX(-90deg) translateZ(60px); }
   .cube__face--back   { transform:rotateY(180deg) translateZ(60px); }
   .controls{ display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:14px 50px; max-width:95cqw; }
-  #roll-btn{ padding:14px 50px; font-size:clamp(18px,2.2cqw,24px); font-weight:bold; background:#ff6600; color:#fff; border-radius:50px; box-shadow:0 6px 10px rgba(0,0,0,.2); }
-  #roll-btn:active{ background:#e65c00; }
-  #roll-btn:disabled{ background:#aaa; cursor:not-allowed; }
+  /* 「サイコロを振る！」は盤面の真ん中（ベースのサイコロの上）に置く。画面の下だとタブレットで押しに行くのが遠い
+     （2026-09-21 本人指示）。振っている間は同じ場所に3Dのサイコロが出るので、ボタンは消す */
+  #roll-btn{
+    position:absolute; left:50%; top:60%; transform:translate(-50%,-50%); z-index:15;   /* 60%＝ベースのサイコロの顔を隠さない位置 */
+    padding:14px 50px; font-size:clamp(18px,2.2cqw,24px); font-weight:bold; background:#ff6600; color:#fff;
+    border-radius:50px; box-shadow:0 6px 14px rgba(0,0,0,.3); transition:opacity .2s;
+  }
+  #roll-btn:active{ background:#e65c00; transform:translate(-50%,-50%) scale(.96); }
+  #roll-btn:disabled{ opacity:0; pointer-events:none; }
   #back-btn{ padding:10px 30px; font-size:clamp(15px,1.6cqw,18px); background:#999; color:#fff; border-radius:50px; box-shadow:0 4px 6px rgba(0,0,0,.2); }
   #back-btn:active{ background:#777; }
   #back-btn:disabled{ opacity:.5; cursor:not-allowed; }
@@ -352,6 +379,8 @@
     header h1{ font-size:14px; }
     header h1 .dao-logo{ height:26px; }
     .hbtn{ padding:.35em .8em; font-size:12px; }
+    .takoup-badge{ font-size:11px; padding:.2em .6em; }
+    .takoup-badge .tu-until{ display:none; }   /* 狭い画面では「（〇〇の次の番まで）」を省いてヘッダーを1行に保つ */
     #game-area{ padding:.6cqh .8cqw; }
     .main-col, .side-col{ gap:.5cqh; }
     .card{ padding:.5cqh .8cqw; }
@@ -384,6 +413,13 @@
     .dashboard.ph-sell .teppan-card{ min-height:45%; }
     table.menu td{ padding:.12em .3em; }
     #dice-area{ gap:.8cqh; padding:.6cqh 1cqw; }
+    /* イベントカードの大画面表示（狭い画面用） */
+    .ev-big-card{ padding:1.5cqh 2cqw; gap:2.5cqw; }
+    .ev-big-card .flip{ height:min(72cqh, 260px); }
+    .ev-big-name{ font-size:17px; }
+    .ev-big-desc{ font-size:13px; }
+    .ev-big-result{ font-size:13px; padding:.4em .6em; }
+    .ev-big-btns .abtn{ font-size:14px; padding:.5em 1.2em; }
     #board-container{ width:min(95cqw, 1000px, calc((100cqh - 110px) * 1.41)); }
     #turn-label{ font-size:12px; padding:.1em .5em; border-width:2px; }   /* 盤面が小さいので「▶ プレイヤー1 の番」が入る大きさに */
     .controls{ gap:8px 30px; }
@@ -397,6 +433,7 @@
 
 <header>
   <h1>🐙 たこ焼き屋さんゲーム<span class="h-sub" id="hSub"></span><img class="dao-logo" src="dao-logo.png" alt="マネリテDAO"></h1>
+  <span class="takoup-badge" id="takoUpBadge" style="display:none;">🐙 たこ値上がり中 +30円<span class="tu-until" id="takoUpUntil"></span></span>
   <button class="hbtn" id="undoBtn" style="display:none;">🔙 収支を1つ戻す</button>
   <button class="hbtn" id="closeDayBtn" style="display:none;">🏁 閉店精算</button>
   <button class="hbtn" id="resetBtn" style="display:none;">🔄 リセット</button>
@@ -456,7 +493,6 @@
           <div class="dk-pile" id="evPile"></div>
           <div class="dk-txt"><span class="dk-l">イベントカード</span><span class="dk-n" id="evCount">0<small>枚</small></span></div>
         </div>
-        <span class="takoup-badge" id="takoUpBadge" style="display:none;">🐙 たこ値上がり中 +30円</span>
         <div class="deck-box mane grow">
           <div class="dk-txt"><span class="dk-l">マネリテカード置き場</span><span class="dk-n" id="maneInfo" style="font-size:clamp(11px,1cqw,14px);color:#4a0072;"></span></div>
           <div class="mane-btns">
@@ -516,9 +552,9 @@
         <div class="cube__face cube__face--back">⚅</div>
       </div>
     </div>
+    <button id="roll-btn">サイコロを振る！</button>
   </div>
   <div class="controls">
-    <button id="roll-btn">サイコロを振る！</button>
     <button id="back-btn">1つ戻る</button>
   </div>
 </div>
@@ -530,6 +566,19 @@
   <div class="zoom-card">
     <div class="zoom-head"><span class="zoom-ttl" id="zoomTitle"></span><button class="abtn skip" id="zoomCloseBtn">✕ とじる</button></div>
     <div class="zoom-body" id="zoomBody"></div>
+  </div>
+</div>
+
+<!-- イベントカードの大画面表示。めくり終わると「🎁 受け取る」が押せるようになり、効果のあと「次へ」でとじて再開する -->
+<div id="eventOverlay">
+  <div class="ev-big-card">
+    <div class="flip" id="evFlip"><div class="flip-inner" id="evFlipInner"></div></div>
+    <div class="ev-big-side">
+      <div class="ev-big-name" id="evBigName"></div>
+      <div class="ev-big-desc" id="evBigDesc"></div>
+      <div class="ev-big-result" id="evBigResult" style="display:none;"></div>
+      <div class="ev-big-btns" id="evBigBtns"></div>
+    </div>
   </div>
 </div>
 
@@ -655,13 +704,15 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
   var masuBox = $('masuBox'), masuPic = $('masuPic'), masuM1 = $('masuM1'), masuM2 = $('masuM2');
   var diceGoBtn = $('diceGoBtn'), diceGoSub = $('diceGoSub'), komaBackBtn = $('komaBackBtn'), komaBackSub = $('komaBackSub');
   var deckPile = $('deckPile'), deckCount = $('deckCount'), fieldCount = $('fieldCount'), evPile = $('evPile'), evCount = $('evCount');
-  var takoUpBadge = $('takoUpBadge'), maneInfo = $('maneInfo'), borrowBtn = $('borrowBtn'), repayBtn = $('repayBtn'), hokenBtn = $('hokenBtn');
+  var takoUpBadge = $('takoUpBadge'), takoUpUntil = $('takoUpUntil'), maneInfo = $('maneInfo'), borrowBtn = $('borrowBtn'), repayBtn = $('repayBtn'), hokenBtn = $('hokenBtn');
   var actionHead = $('actionHead'), actionBody = $('actionBody');
   var dealLayer = $('dealLayer'), dealTimers = [];   // 仕入れの「山札→場」アニメ用
   var appEl = $('app'), dashboardEl = document.querySelector('.dashboard');
   var menuTable = $('menuTable'), menuHint = $('menuHint'), handGrid = $('handGrid'), handTitle = $('handTitle');
   var historyListEl = $('historyList'), undoBtn = $('undoBtn'), resetBtn = $('resetBtn'), closeDayBtn = $('closeDayBtn');
   var resultOverlay = $('resultOverlay'), resultListEl = $('resultList');
+  var eventOverlay = $('eventOverlay'), evFlip = $('evFlip'), evFlipInner = $('evFlipInner');
+  var evBigName = $('evBigName'), evBigDesc = $('evBigDesc'), evBigResult = $('evBigResult'), evBigBtns = $('evBigBtns');
   var koma = $('koma'), highlightCircle = $('highlight-circle'), rollBtn = $('roll-btn'), backBtn = $('back-btn');
   var scene = $('dice-scene'), cube = $('dice'), turnNameEl = $('turnName'), turnLabel = $('turn-label'), masuZoom = $('masu-zoom'), mzPic = $('mzPic'), mzCap = $('mzCap');
 
@@ -701,6 +752,7 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
   // ===== 画面切り替え =====
   function showScreen(name){
     closeZoom();
+    if(name !== 'game') eventOverlay.classList.remove('open');
     setupArea.style.display = name === 'setup' ? 'flex' : 'none';
     gameArea.style.display  = name === 'game'  ? 'flex' : 'none';
     diceArea.style.display  = name === 'dice'  ? 'flex' : 'none';
@@ -1246,10 +1298,11 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     fieldCount.innerHTML = field.length + '<small>枚</small>';
     evCount.innerHTML = eventDeck.length + '<small>枚</small>';
     takoUpBadge.style.display = takoUpBy !== null ? '' : 'none';
-    if(takoUpBy !== null) takoUpBadge.textContent = '🐙 たこ値上がり中 +30円（' + players[takoUpBy].name + 'の次の番まで）';
+    if(takoUpBy !== null) takoUpUntil.textContent = '（' + players[takoUpBy].name + 'の次の番まで）';
   }
   function renderAction(){
     actionHead.innerHTML = ''; actionBody.innerHTML = '';
+    if(phase !== 'event') eventOverlay.classList.remove('open');   // イベント以外では大画面をとじる（コマを戻したときも）
     var p = cur();
     // ボタンは .ah-btns（margin-left:auto）に入れる。説明文が長くて折り返しても、ボタンだけ左に落ちない
     function head(title, sub, btns){
@@ -1288,26 +1341,29 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
       actionBody.appendChild(grid);
     }
     else if(phase === 'event'){
+      // カードは #eventOverlay に大きく出す（2026-09-21 本人指示）。アクション欄には結果だけ残す
       var ev = EVENTS[eventState.id];
       head('🃏 イベントカード', eventState.applied ? '' : 'カードをめくっています…');
-      var wrap = document.createElement('div'); wrap.className = 'flip-wrap';
-      var flip = document.createElement('div'); flip.className = 'flip' + (eventState.flipped ? ' flipped' : '');
-      flip.style.width = Math.max(70, Math.min(150, Math.floor((actionBody.clientHeight - 12) * 180 / 298))) + 'px';   // 欄の高さに収める
-      var inner = document.createElement('div'); inner.className = 'flip-inner';
-      var back = cardEl('back_event', 'face back'), front = cardEl(eventState.id, 'face front');
-      inner.appendChild(back); inner.appendChild(front); flip.appendChild(inner); wrap.appendChild(flip);
-      var txt = document.createElement('div'); txt.className = 'ev-text';
-      txt.innerHTML = '<div class="ev-name">' + esc(ev.name) + '</div><div class="ev-desc">' + esc(ev.desc) + '</div>';
-      var row = document.createElement('div'); row.className = 'ev-row';
-      if(eventState.applied){ var r = document.createElement('span'); r.className = 'ev-result'; r.textContent = '→ ' + eventState.result; row.appendChild(r); }
-      row.appendChild(eventState.applied ? btn('done', '次へ', endEvent) : btn('ok', 'カードの効果を受ける', applyEvent, !eventState.flipped));
-      txt.appendChild(row); wrap.appendChild(txt); actionBody.appendChild(wrap);
+      var note = document.createElement('div'); note.className = 'action-idle';
+      note.innerHTML = eventState.applied ? esc(ev.name) + '<br>→ ' + esc(eventState.result) : 'イベントカードを大きく出しています';
+      actionBody.appendChild(note);
+      evFlipInner.innerHTML = '';
+      evFlipInner.appendChild(cardEl('back_event', 'face back'));
+      evFlipInner.appendChild(cardEl(eventState.id, 'face front'));
+      evFlip.className = 'flip' + (eventState.flipped ? ' flipped' : '');
+      evBigName.textContent = ev.name;
+      evBigDesc.textContent = ev.desc;
+      evBigResult.style.display = eventState.applied ? '' : 'none';
+      evBigResult.textContent = eventState.applied ? '→ ' + eventState.result : '';
+      evBigBtns.innerHTML = '';
+      evBigBtns.appendChild(eventState.applied ? btn('done', '次へ', endEvent) : btn('ok', '🎁 受け取る', applyEvent, !eventState.flipped));
+      eventOverlay.classList.add('open');
       if(!eventState.flipped && !eventState.animating){
         eventState.animating = true;
-        setTimeout(function(){ flip.classList.add('flipped'); }, 150);
+        setTimeout(function(){ evFlip.classList.add('flipped'); }, 150);
         setTimeout(function(){ if(eventState){ eventState.flipped = true; eventState.animating = false; render(); } }, 1100);
       } else if(!eventState.flipped){
-        flip.classList.add('flipped');   // めくり中に再描画されたら、めくった状態で置き直す
+        evFlip.classList.add('flipped');   // めくり中に再描画されたら、めくった状態で置き直す
       }
     }
     else if(phase === 'sell'){

@@ -135,20 +135,27 @@
         .controls { gap: 14px 24px; }
     }
 
-    /* サイコロを振るボタン */
+    /* サイコロを振るボタン（盤面の真ん中＝ベースのサイコロの上。2026-09-21 本人指示。
+       振っている間は同じ場所に3Dのサイコロが出るのでボタンは消す） */
     #roll-btn {
+        position: absolute;
+        left: 50%;
+        top: 60%;
+        transform: translate(-50%, -50%);
+        z-index: 15;
         padding: 15px 50px;
-        font-size: 24px;
+        font-size: clamp(18px, 2.2cqw, 24px);
         font-weight: bold;
         background-color: #ff6600;
         color: white;
         border: none;
         border-radius: 50px;
         cursor: pointer;
-        box-shadow: 0 6px 10px rgba(0,0,0,0.2);
+        box-shadow: 0 6px 14px rgba(0,0,0,0.3);
+        transition: opacity .2s;
     }
     #roll-btn:hover { background-color: #e65c00; }
-    #roll-btn:disabled { background-color: #aaa; cursor: not-allowed; }
+    #roll-btn:disabled { opacity: 0; pointer-events: none; }
 
     /* 戻るボタン */
     #back-btn {
@@ -184,10 +191,10 @@
             <div class="cube__face cube__face--back">⚅</div>
         </div>
     </div>
+    <button id="roll-btn">サイコロを振る！</button>
 </div>
 
 <div class="controls">
-    <button id="roll-btn">サイコロを振る！</button>
     <button id="back-btn">1つ戻る</button>
     <img class="dao-logo" src="dao-logo.png" alt="マネリテDAO">
 </div>

@@ -306,12 +306,15 @@
   .cube__face--back   { transform:rotateY(180deg) translateZ(60px); }
 
   .controls{ display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:14px 50px; max-width:95cqw; }
+  /* 「サイコロを振る！」は盤面の真ん中（ベースのサイコロの上）に置く。画面の下だとタブレットで押しに行くのが遠い
+     （2026-09-21 本人指示）。振っている間は同じ場所に3Dのサイコロが出るので、ボタンは消す */
   #roll-btn{
+    position:absolute; left:50%; top:60%; transform:translate(-50%,-50%); z-index:15;   /* 60%＝ベースのサイコロの顔を隠さない位置 */
     padding:14px 50px; font-size:clamp(18px,2.2cqw,24px); font-weight:bold; background:#ff6600; color:#fff;
-    border-radius:50px; box-shadow:0 6px 10px rgba(0,0,0,.2);
+    border-radius:50px; box-shadow:0 6px 14px rgba(0,0,0,.3); transition:opacity .2s;
   }
-  #roll-btn:active{ background:#e65c00; }
-  #roll-btn:disabled{ background:#aaa; cursor:not-allowed; }
+  #roll-btn:active{ background:#e65c00; transform:translate(-50%,-50%) scale(.96); }
+  #roll-btn:disabled{ opacity:0; pointer-events:none; }
   #back-btn{
     padding:10px 30px; font-size:clamp(15px,1.6cqw,18px); background:#999; color:#fff;
     border-radius:50px; box-shadow:0 4px 6px rgba(0,0,0,.2);
@@ -461,9 +464,9 @@
         <div class="cube__face cube__face--back">⚅</div>
       </div>
     </div>
+    <button id="roll-btn">サイコロを振る！</button>
   </div>
   <div class="controls">
-    <button id="roll-btn">サイコロを振る！</button>
     <button id="back-btn">1つ戻る</button>
   </div>
 </div>
