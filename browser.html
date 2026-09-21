@@ -1302,7 +1302,8 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
   }
   function renderAction(){
     actionHead.innerHTML = ''; actionBody.innerHTML = '';
-    if(phase !== 'event') eventOverlay.classList.remove('open');   // イベント以外では大画面をとじる（コマを戻したときも）
+    // イベント以外では大画面をとじる（コマを戻したときも）。中のボタンも消しておく（隠れたまま残ると、あとの .abtn 探しに引っかかる）
+    if(phase !== 'event'){ eventOverlay.classList.remove('open'); evBigBtns.innerHTML = ''; }
     var p = cur();
     // ボタンは .ah-btns（margin-left:auto）に入れる。説明文が長くて折り返しても、ボタンだけ左に落ちない
     function head(title, sub, btns){
@@ -1357,6 +1358,8 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
       evBigResult.textContent = eventState.applied ? '→ ' + eventState.result : '';
       evBigBtns.innerHTML = '';
       evBigBtns.appendChild(eventState.applied ? btn('done', '次へ', endEvent) : btn('ok', '🎁 受け取る', applyEvent, !eventState.flipped));
+      // 大画面が「コマを戻す」を隠してしまうので、同じボタンをここにも出す（効果を受ける前だけ押せる）
+      if(canKomaBack()) evBigBtns.appendChild(btn('skip', '↩ コマを戻す', komaBack));
       eventOverlay.classList.add('open');
       if(!eventState.flipped && !eventState.animating){
         eventState.animating = true;
