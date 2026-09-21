@@ -230,6 +230,9 @@
   .result-row .r-name{ font-weight:bold; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .result-row .r-money{ font-weight:bold; color:#bf360c; }
   .result-row .r-debt{ flex-basis:100%; font-size:.85em; color:#c62828; font-weight:bold; }
+  .result-row.minus .r-money{ color:#c62828; }
+  /* 閉店精算の明細（借金の強制返済・レンタル料） */
+  .result-settle{ background:#f3e5f5; color:#4a0072; border-radius:10px; padding:.7em 1em; margin-bottom:.8em; text-align:left; font-size:clamp(11px,1cqw,14px); line-height:1.6; }
   .result-card .start-button{ margin-top:.5em; }
 
   /* ===== サイコロ画面 ===== */
@@ -468,7 +471,7 @@
 <div id="resultOverlay">
   <div class="result-card">
     <h2>🏁 閉店！ 結果発表</h2>
-    <div class="result-note">順位は、所持金から未返済の借金券（1枚110円）を引いた「実質の金額」で決まります</div>
+    <div class="result-note">未返済の借金券は閉店のときに全部返します（1枚110円）。順位は、そのあとの所持金で決まります</div>
     <div id="resultList"></div>
     <button class="start-button" id="resultCloseBtn">とじる</button>
   </div>
@@ -561,6 +564,7 @@
   var players = [];
   var activeIndex = 0;       // 収支計算で表示中のプレイヤー
   var historyStack = [];
+  var closeSettle = null;    // 閉店精算の明細（閉店ずみの印。「閉店精算」をもう一度押したら結果を出し直すだけにする）
   var turnIndex = 0;         // サイコロを振る番のプレイヤー
   var awaitingNext = false;  // true＝この番のサイコロは振り終わっている（次に「サイコロへ」で次の人に回る）
   var enteredAdvanced = false; // サイコロ画面に入るときに番を進めたか（振る前に戻ったら元に戻す）
@@ -609,7 +613,8 @@
   var turnNameEl = document.getElementById('turnName');
   var turnLabel = document.getElementById('turn-label');
 
-  function yen(n){ return '¥' + Math.round(n).toLocaleString('ja-JP'); }
+  // マイナスは「¥-20」ではなく「−¥20」と出す（閉店精算で赤字になることがある）
+  function yen(n){ n = Math.round(n); return (n < 0 ? '−¥' : '¥') + Math.abs(n).toLocaleString('ja-JP'); }
 
   function escapeHtml(s){
     return String(s).replace(/[&<>"']/g, function(c){
@@ -687,6 +692,7 @@
 
   function undoLastAction(){
     if(historyStack.length === 0) return;
+    closeSettle = null;   // 閉店精算を取り消したら、また閉店できる
     var last = historyStack.pop();
     var p = players[last.playerIndex];
     p.money = last.oldValue;
@@ -695,34 +701,65 @@
     render();
   }
 
+  // 閉店精算＝①未返済の借金券をここで全部返す（強制。1枚110円）→②全員が鉄板レンタル料300円→③結果発表。
+  // ①②は所持金が足りなくてもそのまま引く（マイナス＝赤字）。0円で止めると返せなかった人が得をしてしまう（2026-09-21 本人指示）
   function closeDay(){
-    var hasDebtor = players.some(function(p){ return p.debt > 0; });
-    var msg = '閉店しますか？\n全員からレンタル料（固定費）' + RENT + '円を引いて、結果を表示します。';
-    if(hasDebtor){
-      msg = '⚠ 未返済の借金券があるプレイヤーがいます。\n先に「返す」で精算してから閉店するのがおすすめです。\n\n' + msg;
+    if(closeSettle){ showResults(closeSettle); return; }   // 閉店ずみ。もう一度押したら結果を出すだけ（レンタル料を二重に引かない）
+    var debtors = players.map(function(p, i){ return { i:i, name:p.name, n:p.debt, cost:p.debt * LOAN_REPAY }; })
+                         .filter(function(d){ return d.n > 0; });
+    var msg = '閉店しますか？\n\n';
+    if(debtors.length){
+      msg += '① 未返済の借金券を、ここで全部返します（1枚' + LOAN_REPAY + '円）\n'
+           + debtors.map(function(d){ return '　・' + d.name + '：' + d.n + '枚 → −' + d.cost + '円'; }).join('\n') + '\n'
+           + '② 全員が鉄板レンタル料（固定費）' + RENT + '円を払います\n';
+    } else {
+      msg += '・未返済の借金券はありません\n'
+           + '・全員が鉄板レンタル料（固定費）' + RENT + '円を払います\n';
     }
+    msg += '\n所持金が足りないときはマイナス（赤字）になります。\nそのあと結果を発表します。';
     if(!confirm(msg)) return;
-    players.forEach(function(p, i){ changeMoney(i, -RENT, 'レンタル料（固定費）'); });
-    showResults();
+    debtors.forEach(function(d){
+      var p = players[d.i];
+      pushUndo(d.i);
+      p.debt = 0; p.money -= d.cost;
+      p.history.push('🏦 閉店の精算：借金券' + d.n + '枚の返済で −' + d.cost + '円 (残高 ' + yen(p.money) + ')');
+    });
+    players.forEach(function(p, i){
+      pushUndo(i);
+      p.money -= RENT;
+      p.history.push('🏠 鉄板レンタル料（固定費）で −' + RENT + '円 (残高 ' + yen(p.money) + ')');
+    });
+    closeSettle = { debts: debtors, rent: RENT };
+    render();
+    showResults(closeSettle);
   }
 
-  function showResults(){
-    var list = players.map(function(p){
-      return { name: p.name, money: p.money, debt: p.debt, net: p.money - p.debt * LOAN_REPAY };
-    });
-    list.sort(function(a, b){ return b.net - a.net; });
-    var top = list.length ? list[0].net : 0;
+  function showResults(settle){
+    var list = players.map(function(p){ return { name: p.name, money: p.money }; });
+    list.sort(function(a, b){ return b.money - a.money; });
+    var top = list.length ? list[0].money : 0;
     resultListEl.innerHTML = '';
+    // 閉店精算の明細（借金の強制返済＋レンタル料）
+    var sv = document.createElement('div');
+    sv.className = 'result-settle';
+    var sh = '<b>閉店の精算</b>';
+    if(settle && settle.debts.length){
+      sh += '<div>🏦 借金券の返済（1枚' + LOAN_REPAY + '円）</div>'
+          + settle.debts.map(function(d){ return '<div>　・' + escapeHtml(d.name) + '：' + d.n + '枚 → −' + d.cost + '円</div>'; }).join('');
+    } else {
+      sh += '<div>🏦 未返済の借金券はありませんでした</div>';
+    }
+    sh += '<div>🏠 鉄板レンタル料（固定費）：全員 −' + RENT + '円</div>';
+    sv.innerHTML = sh;
+    resultListEl.appendChild(sv);
+    var rank = 1;
     list.forEach(function(r, idx){
+      if(idx > 0 && r.money < list[idx-1].money) rank = idx + 1;   // 同じ金額なら同じ順位
       var row = document.createElement('div');
-      row.className = 'result-row' + (r.net === top ? ' winner' : '');
-      var html = '<span class="r-rank">' + (r.net === top ? '🏆 ' : '') + (idx + 1) + '位</span>'
+      row.className = 'result-row' + (r.money === top ? ' winner' : '') + (r.money < 0 ? ' minus' : '');
+      row.innerHTML = '<span class="r-rank">' + (r.money === top ? '🏆 ' : '') + rank + '位</span>'
         + '<span class="r-name">' + escapeHtml(r.name) + '</span>'
-        + '<span class="r-money">' + yen(r.money) + '</span>';
-      if(r.debt > 0){
-        html += '<span class="r-debt">⚠ 借金券' + r.debt + '枚が未返済 → 実質 ' + yen(r.net) + '</span>';
-      }
-      row.innerHTML = html;
+        + '<span class="r-money">' + yen(r.money) + (r.money < 0 ? '（赤字）' : '') + '</span>';
       resultListEl.appendChild(row);
     });
     resultOverlay.style.display = 'flex';
@@ -1025,7 +1062,7 @@
   resetBtn.addEventListener('click', function(){
     if(!confirm('ゲームをリセットしますか？全員のデータが失われます。')) return;
     resultOverlay.style.display = 'none';
-    players = []; historyStack = []; activeIndex = 0;
+    players = []; historyStack = []; activeIndex = 0; closeSettle = null;
     turnIndex = 0; awaitingNext = false; enteredAdvanced = false;
     currentPosition = 0; lastLanded = null; komaStack = []; rolling = false;
     hideMasuZoom();
@@ -1046,7 +1083,7 @@
 
     players = [];
     historyStack = [];
-    activeIndex = 0;
+    activeIndex = 0; closeSettle = null;
     turnIndex = 0; awaitingNext = false; enteredAdvanced = false;
     currentPosition = 0; lastLanded = null; komaStack = []; rolling = false;
     hideMasuZoom();
