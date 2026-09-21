@@ -156,10 +156,13 @@
 
   /* アクションエリア */
   .action-card{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; overflow:hidden; }
+  /* 見出し＝題（折り返さない）＋説明（あまりを取って中で折り返す）＋ボタン（つねに右端）。
+     spacer で右に寄せていたころは、説明文の長さしだいでボタンだけ次の行の左に落ちていた
+     （2026-09-21 本人指摘：プレイヤー3だけ OPEN の「売らない」が画面左に出る） */
   .action-head{ display:flex; align-items:center; gap:.8em; flex-wrap:wrap; margin-bottom:.4cqh; }
-  .action-head .ah-title{ font-size:clamp(14px,1.4cqw,19px); font-weight:bold; color:#bf360c; }
-  .action-head .ah-sub{ font-size:clamp(11px,1cqw,14px); color:#8a5a3a; }
-  .action-head .spacer{ flex:1; }
+  .action-head .ah-title{ flex:0 0 auto; font-size:clamp(14px,1.4cqw,19px); font-weight:bold; color:#bf360c; }
+  .action-head .ah-sub{ flex:1 1 10em; min-width:0; font-size:clamp(11px,1cqw,14px); color:#8a5a3a; }
+  .action-head .ah-btns{ flex:0 0 auto; margin-left:auto; display:flex; align-items:center; gap:.5em; }
   .action-body{ flex:1; min-height:0; overflow:auto; display:flex; align-items:flex-start; gap:1cqw; padding:.4cqh .2cqw; }
   .action-idle{ color:#a87d55; font-size:clamp(13px,1.2cqw,17px); align-self:center; margin:auto; text-align:center; line-height:1.6; }
   .abtn{
@@ -282,7 +285,7 @@
 
   /* 閉店結果 */
   #resultOverlay{ position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; z-index:50; padding:2cqh 2cqw; }
-  .result-card{ background:#fff; border-radius:16px; padding:3cqh 3cqw; box-shadow:0 6px 24px rgba(0,0,0,.25); max-width:640px; width:100%; max-height:90cqh; overflow-y:auto; text-align:center; }
+  .result-card{ background:#fff; border-radius:16px; padding:3cqh 3cqw; box-shadow:0 6px 24px rgba(0,0,0,.25); max-width:760px; width:100%; max-height:90cqh; overflow-y:auto; text-align:center; }
   .result-card h2{ color:#e64a19; font-size:clamp(18px,2cqw,26px); margin-bottom:.5em; }
   .result-note{ color:#a87d55; font-size:clamp(10px,1cqw,13px); margin-bottom:1em; }
   .result-row{ display:flex; align-items:center; gap:.8em; flex-wrap:wrap; background:#fff3e0; border-radius:10px; padding:.7em 1em; margin-bottom:.5em; text-align:left; }
@@ -291,6 +294,10 @@
   .result-row .r-name{ font-weight:bold; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .result-row .r-money{ font-weight:bold; color:#bf360c; }
   .result-row .r-debt{ flex-basis:100%; font-size:.85em; color:#c62828; font-weight:bold; }
+  .result-row.minus .r-money{ color:#c62828; }
+  /* 閉店精算の明細（借金の強制返済・レンタル料）と、1人ずつの内訳 */
+  .result-settle{ background:#f3e5f5; color:#4a0072; border-radius:10px; padding:.7em 1em; margin-bottom:.8em; text-align:left; font-size:clamp(11px,1cqw,14px); line-height:1.6; }
+  .r-detail{ flex-basis:100%; border-top:1px dotted #e6c9a8; margin-top:.15em; padding-top:.4em; font-size:clamp(10px,.95cqw,13px); color:#6d4c41; line-height:1.6; }
   .result-card .start-button{ margin-top:.5em; }
 
   /* ===== サイコロ画面 ===== */
@@ -363,7 +370,6 @@
     .action-head{ margin-bottom:.2cqh; flex-wrap:nowrap; gap:.5em; }
     .action-head .ah-title{ font-size:13px; white-space:nowrap; }
     .action-head .ah-sub{ flex:1 1 0; min-width:0; font-size:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .action-head .spacer{ display:none; }
     .abtn{ font-size:12px; padding:.4em .8em; white-space:nowrap; }
     /* 仕入れ表を横スクロールの入れ子にしない（スマホで縦スワイプが吸われて欄がスクロールできなくなる）。
        入りきらなければ折り返し、欄全体（.action-body）がスクロールする。下の余白も詰める（カードの高さは gridCardWidth が欄に合わせる） */
@@ -530,7 +536,7 @@
 <div id="resultOverlay">
   <div class="result-card">
     <h2>🏁 閉店！ 結果発表</h2>
-    <div class="result-note">順位は、所持金から未返済の借金券（1枚110円）を引いた「実質の金額」で決まります</div>
+    <div class="result-note">未返済の借金券は閉店のときに全部返します（1枚110円）。順位は、そのあとの所持金で決まります</div>
     <div id="resultList"></div>
     <button class="start-button" id="resultCloseBtn">とじる</button>
   </div>
@@ -580,7 +586,8 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     cheese: { name:'チーズたん',   price:40,  n:5 },
     magic:  { name:'まほうの材料', price:120, n:3 }   // どの材料の代わりにもなる
   };
-  var MAT_ORDER = ['tako','kiji','sauce','mayo','tenkasu','mentai','negi','cheese','magic'];
+  // カードを並べる順番。場・手持ち・仕入れ表・メニューの材料アイコン、すべてこの順で固定（枚数順にはしない。2026-09-21 本人指示）
+  var MAT_ORDER = ['tako','kiji','sauce','tenkasu','mayo','mentai','cheese','negi','magic'];
   var MENU = [
     { id:'ten',     name:'てんちゃんたこ焼き',           price:400,  need:{ tako:1, kiji:1, sauce:1, tenkasu:1 } },
     { id:'mayo',    name:'マヨたこ焼き',                 price:400,  need:{ tako:1, kiji:1, sauce:1, mayo:1 } },
@@ -639,6 +646,7 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
   var sellState = null;    // { queue:[], pos, sold, all, final }
   var endgame = null;      // null | { step:'lastBuy'|'lastSell'|'close', queue:[], pos }
   var undoStack = [];      // スナップショット（この手番の操作ぶん）
+  var closeSettle = null;  // 閉店精算の明細（閉店ずみの印。「閉店精算」をもう一度押したら結果を出し直すだけにする）
   var landSnap = null, landUndoLen = 0;   // 着地直後の状態（コマを戻す用）
 
   var $ = function(id){ return document.getElementById(id); };
@@ -657,12 +665,18 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
   var koma = $('koma'), highlightCircle = $('highlight-circle'), rollBtn = $('roll-btn'), backBtn = $('back-btn');
   var scene = $('dice-scene'), cube = $('dice'), turnNameEl = $('turnName'), turnLabel = $('turn-label'), masuZoom = $('masu-zoom'), mzPic = $('mzPic'), mzCap = $('mzCap');
 
-  function yen(n){ return '¥' + Math.round(n).toLocaleString('ja-JP'); }
+  // マイナスは「¥-20」ではなく「−¥20」と出す（閉店精算で赤字になることがある）
+  function yen(n){ n = Math.round(n); return (n < 0 ? '−¥' : '¥') + Math.abs(n).toLocaleString('ja-JP'); }
   function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
   function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
   function log(pi, msg){ players[pi].history.push(msg); }
   function logAll(msg){ players.forEach(function(p){ p.history.push(msg); }); }
   function cur(){ return players[activeIndex]; }
+  // 閉店の明細に出すカウンター。players ごとJSONでスナップショットを取っているので、「戻す」でもそのまま巻き戻る
+  function st(p){
+    if(!p.stats) p.stats = { sold:{}, sales:0, bonus:0, buys:0, buyCost:0, repair:0, repairSaved:0, borrow:0, borrowCards:0, repay:0, repayYen:0, hoken:0 };
+    return p.stats;
+  }
 
   // ===== スナップショット（収支を1つ戻す）=====
   function snapshot(){
@@ -677,7 +691,7 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
   function pushUndo(){ undoStack.push(snapshot()); }
   function undo(){
     if(!undoStack.length) return;
-    cancelDeal();
+    cancelDeal(); closeSettle = null;   // 閉店精算を取り消したら、また閉店できる
     restore(undoStack.pop());
     if(phase === 'event' && eventState){ eventState.flipped = true; }   // めくり直しはしない
     if(phase === 'buy' && buyState){ buyState.dealing = false; }        // 山札→場のアニメもやり直さない
@@ -704,6 +718,7 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     if(p.money < amount){
       var units = Math.ceil((amount - p.money) / LOAN_UNIT);
       p.debt += units; p.money += units * LOAN_UNIT;
+      st(p).borrow += 1; st(p).borrowCards += units;
       log(pi, '🏦 ' + label + 'のお金が足りないので、借金券' + units + '枚（' + (units*LOAN_UNIT) + '円）を自動で借りた（未返済 ' + p.debt + '枚）');
     }
     p.money -= amount;
@@ -714,6 +729,7 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     if(p.debt >= MAX_DEBT){ alert('未返済の借金券は' + MAX_DEBT + '枚までです。'); return; }
     pushUndo();
     p.debt += 1; p.money += LOAN_UNIT;
+    st(p).borrow += 1; st(p).borrowCards += 1;
     log(activeIndex, '🏦 借金券で' + LOAN_UNIT + '円借りた（未返済 ' + p.debt + '枚）（残高 ' + yen(p.money) + '）');
     render();
   }
@@ -723,6 +739,7 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     if(p.money < LOAN_REPAY){ alert('所持金が足りません（返済には' + LOAN_REPAY + '円必要です）。'); return; }
     pushUndo();
     p.debt -= 1; p.money -= LOAN_REPAY;
+    st(p).repay += 1; st(p).repayYen += LOAN_REPAY;
     log(activeIndex, '🏦 借金券を' + LOAN_REPAY + '円で返した（未返済 ' + p.debt + '枚）（残高 ' + yen(p.money) + '）');
     render();
   }
@@ -730,7 +747,7 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     var p = cur();
     if(!canBuyHoken()) return;
     pushUndo();
-    p.money -= HOKEN_PRICE; p.insurance = true; insuranceStock -= 1;
+    p.money -= HOKEN_PRICE; p.insurance = true; insuranceStock -= 1; st(p).hoken += 1;
     log(activeIndex, '☂ 保険カードを' + HOKEN_PRICE + '円で買った（残高 ' + yen(p.money) + '）');
     render();
   }
@@ -787,6 +804,7 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     if(k >= 0) buyState.opened.splice(k, 1); else field.splice(field.indexOf(id), 1);
     var cost = matPrice(id);
     cur().money -= cost; cur().mats[id] = (cur().mats[id]||0) + 1; buyState.bought += 1;
+    st(cur()).buys += 1; st(cur()).buyCost += cost;
     log(activeIndex, '🛒 ' + MAT[id].name + 'を' + cost + '円で仕入れた' + (cost !== MAT[id].price ? '（値上がり中）' : '') + '（残高 ' + yen(cur().money) + '）');
     render();
   }
@@ -813,12 +831,12 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     if(phase !== 'sell' || !craftable(p, m)) return;
     pushUndo();
     var used = [];
-    for(var id in m.need){
+    needIds(m).forEach(function(id){
       var have = p.mats[id]||0, take = Math.min(have, m.need[id]);
       p.mats[id] = have - take; if(take) used.push(MAT[id].name + (take>1?'×'+take:''));
       var short = m.need[id] - take;
       if(short){ p.mats.magic -= short; used.push('まほうの材料' + (short>1?'×'+short:'') + '→' + MAT[id].name); }
-    }
+    });
     // プラスのイベントカードは 1品につき1枚、金額の高いものから自動で使う。余りは次のOPENへ持ち越し（2026-09-18 本人指定）
     var bonus = 0, bonusName = '';
     if(p.plus.length){
@@ -829,6 +847,7 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     }
     p.money += m.price + bonus;
     sellState.sold += 1;
+    st(p).sold[m.id] = (st(p).sold[m.id] || 0) + 1; st(p).sales += m.price; st(p).bonus += bonus;
     log(activeIndex, '🍳 ' + m.name + 'を売った ＋' + m.price + '円' + (bonus ? '＋イベント' + bonus + '円（' + bonusName + '）' : '') + '　使った材料: ' + used.join('・')
       + '（残高 ' + yen(p.money) + '）' + (bonus && p.plus.length ? '　プラスカード のこり' + p.plus.length + '枚' : ''));
     render();
@@ -871,7 +890,8 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     if(ev.kind === 'plus'){ p.plus.push(id); res = '手元に持った（次に売るとき ＋' + ev.bonus + '円）'; }
     else if(ev.kind === 'dev'){ p.dev = true; res = 'チーズクレープが売れるようになった'; }
     else if(id === 'repair'){
-      if(p.insurance){ p.insurance = false; insuranceStock += 1; res = '保険カードを使ったので 150円は払わなくてよい（保険は使い切り）'; log(turnIndex, '☂ 保険カードで修理代150円をふせいだ'); }
+      st(p).repair += 1;
+      if(p.insurance){ p.insurance = false; insuranceStock += 1; st(p).repairSaved += 1; res = '保険カードを使ったので 150円は払わなくてよい（保険は使い切り）'; log(turnIndex, '☂ 保険カードで修理代150円をふせいだ'); }
       else { pay(turnIndex, 150, 'テッパンの修理'); res = '−150円'; }
     }
     else if(id === 'weather'){ players.forEach(function(_, i){ pay(i, 40, '天気がわるくてお客さんが少ない'); }); res = '全員 −40円'; }
@@ -903,7 +923,7 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
         else { endgame.step = 'lastSell'; logAll('🏁 最後の販売：全員が順番にたこ焼きを売れます'); startSell(endgame.queue.slice(), true); }
       } else if(endgame.step === 'lastSell'){
         endgame.step = 'close';
-        logAll('🏁 販売が終わりました。「閉店精算」を押すと、全員が鉄板レンタル料300円を払って結果発表です');
+        logAll('🏁 販売が終わりました。「閉店精算」を押すと、未返済の借金券を全部返して（1枚' + LOAN_REPAY + '円）、全員が鉄板レンタル料' + RENT + '円を払って結果発表です');
       }
     }
     render();
@@ -988,27 +1008,89 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
   }
 
   // ===== 閉店 =====
+  // 閉店精算＝①未返済の借金券をここで全部返す（強制。1枚110円）→②全員が鉄板レンタル料300円→③結果発表。
+  // ①②は所持金が足りなくてもそのまま引く（マイナス＝赤字）。ここで pay() を使うと借り直してしまい「強制返済」にならない（2026-09-21 本人指示）
+  function payFinal(pi, amount, label){
+    var p = players[pi];
+    p.money -= amount;
+    log(pi, label + 'で −' + amount + '円（残高 ' + yen(p.money) + '）');
+  }
   function closeDay(){
-    var hasDebtor = players.some(function(p){ return p.debt > 0; });
-    var msg = '閉店しますか？\n全員からレンタル料（固定費）' + RENT + '円を引いて、結果を表示します。';
-    if(hasDebtor) msg = '⚠ 未返済の借金券があるプレイヤーがいます。\n先に「返す」で精算してから閉店するのがおすすめです。\n\n' + msg;
+    if(closeSettle){ showResults(closeSettle); return; }   // 閉店ずみ。もう一度押したら結果を出すだけ（レンタル料を二重に引かない）
+    var debtors = players.map(function(p, i){ return { i:i, name:p.name, n:p.debt, cost:p.debt * LOAN_REPAY }; })
+                         .filter(function(d){ return d.n > 0; });
+    var msg = '閉店しますか？\n\n';
+    if(debtors.length){
+      msg += '① 未返済の借金券を、ここで全部返します（1枚' + LOAN_REPAY + '円）\n'
+           + debtors.map(function(d){ return '　・' + d.name + '：' + d.n + '枚 → −' + d.cost + '円'; }).join('\n') + '\n'
+           + '② 全員が鉄板レンタル料（固定費）' + RENT + '円を払います\n';
+    } else {
+      msg += '・未返済の借金券はありません\n'
+           + '・全員が鉄板レンタル料（固定費）' + RENT + '円を払います\n';
+    }
+    msg += '\n所持金が足りないときはマイナス（赤字）になります。\nそのあと結果を発表します。';
     if(!confirm(msg)) return;
     pushUndo();
-    players.forEach(function(p, i){ pay(i, RENT, '鉄板レンタル料（固定費）'); });
+    var settle = { debts: debtors.slice(), rent: RENT };
+    debtors.forEach(function(d){
+      var p = players[d.i];
+      p.debt = 0; st(p).repay += d.n; st(p).repayYen += d.cost; st(p).forcedRepay = d.cost; st(p).forcedCards = d.n;
+      payFinal(d.i, d.cost, '🏦 閉店の精算：借金券' + d.n + '枚の返済');
+    });
+    players.forEach(function(p, i){ payFinal(i, RENT, '🏠 鉄板レンタル料（固定費）'); });
     if(endgame) endgame.step = 'done';
-    render(); showResults();
+    closeSettle = settle;
+    render(); showResults(settle);
   }
-  function showResults(){
-    var list = players.map(function(p){ return { name:p.name, money:p.money, debt:p.debt, net:p.money - p.debt * LOAN_REPAY }; });
-    list.sort(function(a,b){ return b.net - a.net; });
-    var top = list.length ? list[0].net : 0;
+  // 結果発表。順位のあとに、1人ずつ明細（売ったメニュー・鉄板が壊れた回数・借金の回数・余った材料費など）を出す
+  function resultDetail(p){
+    var s = st(p), out = [];
+    var soldList = MENU.filter(function(m){ return s.sold[m.id]; });
+    var soldN = soldList.reduce(function(t, m){ return t + s.sold[m.id]; }, 0);
+    out.push('🍳 売ったたこ焼き：' + (soldN
+      ? soldList.map(function(m){ return esc(m.name) + '×' + s.sold[m.id]; }).join('、') + '（' + soldN + '品）　売上 ' + yen(s.sales)
+        + (s.bonus ? '＋イベントカード ' + yen(s.bonus) : '')
+      : 'なし'));
+    out.push('🛒 仕入れた材料：' + s.buys + '枚（' + yen(s.buyCost) + '）');
+    var leftN = 0, leftYen = 0;
+    MAT_ORDER.forEach(function(id){ var n = p.mats[id] || 0; leftN += n; leftYen += n * MAT[id].price; });
+    out.push('📦 余った材料：' + leftN + '枚　材料費の合計 ' + yen(leftYen) + (leftN ? '（売れば売上になったぶん）' : ''));
+    out.push('🔧 鉄板が壊れた：' + s.repair + '回'
+      + (s.repairSaved ? '（うち保険でふせいだ ' + s.repairSaved + '回）' : '')
+      + (s.repair - s.repairSaved > 0 ? '　−' + ((s.repair - s.repairSaved) * 150) + '円' : ''));
+    out.push('🏦 借金をした：' + s.borrow + '回（借金券 ' + s.borrowCards + '枚）'
+      + (s.repayYen ? '　返したお金 ' + yen(s.repayYen) : '')
+      + (s.forcedRepay ? '（うち閉店で強制返済 ' + yen(s.forcedRepay) + '）' : ''));
+    if(options.hoken) out.push('☂ 保険カードを買った：' + s.hoken + '回');
+    out.push('🏠 鉄板レンタル料：−' + RENT + '円');
+    return '<div class="r-detail">' + out.map(function(l){ return '<div>' + l + '</div>'; }).join('') + '</div>';
+  }
+  function showResults(settle){
+    var list = players.map(function(p){ return { p:p, name:p.name, money:p.money }; });
+    list.sort(function(a,b){ return b.money - a.money; });
+    var top = list.length ? list[0].money : 0;
     resultListEl.innerHTML = '';
+    // 閉店精算の明細（借金の強制返済＋レンタル料）
+    var sv = document.createElement('div'); sv.className = 'result-settle';
+    var sh = '<b>閉店の精算</b>';
+    if(settle && settle.debts.length){
+      sh += '<div>🏦 借金券の返済（1枚' + LOAN_REPAY + '円）</div>'
+          + settle.debts.map(function(d){ return '<div>　・' + esc(d.name) + '：' + d.n + '枚 → −' + d.cost + '円</div>'; }).join('');
+    } else {
+      sh += '<div>🏦 未返済の借金券はありませんでした</div>';
+    }
+    sh += '<div>🏠 鉄板レンタル料（固定費）：全員 −' + RENT + '円</div>';
+    sv.innerHTML = sh; resultListEl.appendChild(sv);
+    var rank = 1;
     list.forEach(function(r, idx){
+      if(idx > 0 && r.money < list[idx-1].money) rank = idx + 1;   // 同じ金額なら同じ順位
       var row = document.createElement('div');
-      row.className = 'result-row' + (r.net === top ? ' winner' : '');
-      var html = '<span class="r-rank">' + (r.net === top ? '🏆 ' : '') + (idx+1) + '位</span><span class="r-name">' + esc(r.name) + '</span><span class="r-money">' + yen(r.money) + '</span>';
-      if(r.debt > 0) html += '<span class="r-debt">⚠ 借金券' + r.debt + '枚が未返済 → 実質 ' + yen(r.net) + '</span>';
-      row.innerHTML = html; resultListEl.appendChild(row);
+      row.className = 'result-row' + (r.money === top ? ' winner' : '') + (r.money < 0 ? ' minus' : '');
+      row.innerHTML = '<span class="r-rank">' + (r.money === top ? '🏆 ' : '') + rank + '位</span>'
+        + '<span class="r-name">' + esc(r.name) + '</span>'
+        + '<span class="r-money">' + yen(r.money) + (r.money < 0 ? '（赤字）' : '') + '</span>'
+        + resultDetail(r.p);
+      resultListEl.appendChild(row);
     });
     resultOverlay.style.display = 'flex';
   }
@@ -1105,11 +1187,14 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
       dealTimers.push(setTimeout(cancelDeal, 260));
     }, (n-1) * STEP + MOVE + FLIP + HOLD));
   }
+  // 並び順はいつも MAT_ORDER（枚数では並べ替えない。2026-09-21 本人指示）
   function sortedCounts(counts, order){
     return Object.keys(counts).filter(function(k){ return counts[k] > 0; }).sort(function(a,b){
-      return counts[b] - counts[a] || order.indexOf(a) - order.indexOf(b);
+      return order.indexOf(a) - order.indexOf(b);
     });
   }
+  // メニュー1品に要る材料も同じ順で出す
+  function needIds(m){ return MAT_ORDER.filter(function(id){ return m.need[id]; }); }
   function setMasuPic(el, pos){
     var w = el.offsetWidth, h = el.offsetHeight; if(!w || !h) return;
     var imgW = w * 100 / 11, imgH = imgW / BOARD_RATIO, c = pathCoordinates[pos];
@@ -1166,9 +1251,14 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
   function renderAction(){
     actionHead.innerHTML = ''; actionBody.innerHTML = '';
     var p = cur();
+    // ボタンは .ah-btns（margin-left:auto）に入れる。説明文が長くて折り返しても、ボタンだけ左に落ちない
     function head(title, sub, btns){
-      actionHead.innerHTML = '<span class="ah-title">' + title + '</span><span class="ah-sub">' + (sub||'') + '</span><span class="spacer"></span>';
-      (btns||[]).forEach(function(b){ actionHead.appendChild(b); });
+      actionHead.innerHTML = '<span class="ah-title">' + title + '</span><span class="ah-sub">' + (sub||'') + '</span>';
+      if((btns||[]).length){
+        var box = document.createElement('div'); box.className = 'ah-btns';
+        btns.forEach(function(b){ box.appendChild(b); });
+        actionHead.appendChild(box);
+      }
     }
     function btn(cls, text, fn, dis){ var b = document.createElement('button'); b.className = 'abtn ' + cls; b.innerHTML = text; b.disabled = !!dis; b.addEventListener('click', fn); return b; }
 
@@ -1223,7 +1313,7 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     else if(phase === 'sell'){
       var all = sellState.all, q = sellState.queue;
       head((sellState.final ? '🏁 最後の販売' : (all ? '🎉 OPEN 全員' : '🔥 OPEN')) + '：' + esc(p.name) + (all ? '（' + (sellState.pos+1) + '／' + q.length + '人目）' : ''),
-           '下のてっぱんシートで、材料がそろっているメニューの「売る」を押してください。何品でも売れます。' + (p.plus.length ? '（プラスのイベントカードは1品につき1枚、金額の高いものから自動で使います。余った分は次のOPENへ持ち越し）' : ''),
+           '下のてっぱんシートで、材料がそろっているメニューの「売る」を押してください。何品でも売れます。' + (p.plus.length ? '（プラスのイベントカードは1品に1枚、高い順に自動で使います）' : ''),
            [btn('skip', sellState.sold ? '売り終わり' + (all && sellState.pos+1 < q.length ? '（次の人へ）' : '') : '売らない' + (all && sellState.pos+1 < q.length ? '（次の人へ）' : ''), endSell)]);
       var lst = document.createElement('div'); lst.className = 'action-idle';
       var can = MENU.filter(function(m){ return craftable(p, m); });
@@ -1233,7 +1323,8 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     }
     else if(endgame && endgame.step === 'close'){
       head('🏁 閉店', '全員の販売が終わりました', [btn('done', '閉店精算する', closeDay)]);
-      var t = document.createElement('div'); t.className = 'action-idle'; t.textContent = '「閉店精算する」を押すと、全員が鉄板レンタル料300円を払って結果発表です。';
+      var t = document.createElement('div'); t.className = 'action-idle';
+      t.innerHTML = '「閉店精算する」を押すと、①未返済の借金券を全部返して（1枚' + LOAN_REPAY + '円）<br>②全員が鉄板レンタル料' + RENT + '円を払って、結果発表です。';
       actionBody.appendChild(t);
     }
     else if(endgame && endgame.step === 'done'){
@@ -1259,7 +1350,7 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
       var tr = document.createElement('tr');
       var ok = craftable(p, m), lock = m.dev && !p.dev;
       tr.className = lock ? 'lock ng' : (ok ? 'ok' : 'ng');
-      var chips = '<div class="chips">' + Object.keys(m.need).map(function(id){
+      var chips = '<div class="chips">' + needIds(m).map(function(id){
         return '<span class="chip" title="' + MAT[id].name + '" style="background-image:url(' + CARD_IMG[id] + ')">' + (m.need[id] > 1 ? '<span class="x2">×' + m.need[id] + '</span>' : '') + '</span>';
       }).join('') + (lock ? '<span style="font-size:.85em;color:#a87d55;">商品開発カードが必要</span>' : '') + '</div>';
       tr.innerHTML = '<td class="mn">' + esc(m.name) + '</td><td class="mp">' + m.price + '円</td><td class="mr">' + chips + '</td><td></td>';
@@ -1340,13 +1431,15 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
     options = { loan: $('optLoan').checked, hoken: $('optHoken').checked };
     players = []; undoStack = []; activeIndex = 0; turnIndex = 0; awaitingNext = false; enteredAdvanced = false;
     currentPosition = 0; lastLanded = null; komaStack = []; rolling = false; landSnap = null; landUndoLen = 0;
-    phase = 'idle'; buyState = null; eventState = null; sellState = null; endgame = null; takoUpBy = null;
+    phase = 'idle'; buyState = null; eventState = null; sellState = null; endgame = null; takoUpBy = null; closeSettle = null;
     insuranceStock = options.hoken ? count : 0;
     deck = []; MAT_ORDER.forEach(function(id){ for(var i=0;i<MAT[id].n;i++) deck.push(id); }); shuffle(deck);
     eventDeck = newEventDeck();
     for(var i=0;i<count;i++){
       var mats = {}; MAT_ORDER.forEach(function(id){ mats[id] = 0; });
-      players.push({ name:'プレイヤー'+(i+1), money:initMoney, debt:0, insurance:false, dev:false, mats:mats, plus:[], history:['ゲーム開始！ 所持金'+initMoney+'円です。'] });
+      players.push({ name:'プレイヤー'+(i+1), money:initMoney, debt:0, insurance:false, dev:false, mats:mats, plus:[],
+        stats:{ sold:{}, sales:0, bonus:0, buys:0, buyCost:0, repair:0, repairSaved:0, borrow:0, borrowCards:0, repay:0, repayYen:0, hoken:0 },
+        history:['ゲーム開始！ 所持金'+initMoney+'円です。'] });
     }
     // 配りもの：全員にきじたん1・ソースたん1（山札から抜く）、場に2枚オープン
     players.forEach(function(p, i){
@@ -1362,7 +1455,7 @@ var CARD_IMG = {"back_event": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA
   function resetGame(){
     if(!confirm('ゲームをリセットしますか？全員のデータが失われます。')) return;
     resultOverlay.style.display = 'none';
-    players = []; undoStack = []; komaStack = []; phase = 'idle'; endgame = null; hideMasuZoom(); cancelDeal();
+    players = []; undoStack = []; komaStack = []; phase = 'idle'; endgame = null; closeSettle = null; hideMasuZoom(); cancelDeal();
     $('player-count-input').value = 4; $('init-money-input').value = 390;
     showScreen('setup');
   }
