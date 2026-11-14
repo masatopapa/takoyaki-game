@@ -5,8 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>たこ焼き屋さんゲーム ツール</title>
 <meta name="theme-color" content="#e64a19">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json?v=2">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=2">
+<link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png?v=2">
+<meta name="apple-mobile-web-app-title" content="たこ焼き">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -28,6 +31,20 @@
   .sub-ttl { color: #a87d55; font-size: .9em; margin: 28px 0 -8px; }
   a.card.sub { font-size: 1.05em; padding: 16px; }
   .dao-logo { width: clamp(120px, 18vw, 180px); height: auto; margin: 20px 0; }
+  /* ホーム画面に追加する方法（2026-11-15） */
+  button.card.home { display: block; width: 100%; max-width: 440px; margin: 28px auto 18px; padding: 14px 16px; background: #fff; color: #a06000; border: 2px dashed #f0a000; border-radius: 12px; font: inherit; font-size: 1.02em; font-weight: bold; cursor: pointer; }
+  button.card.home:active { background: #ffe0b2; }
+  button.card.home[hidden] { display: none; }
+  .home-ov { position: fixed; inset: 0; background: rgba(60, 30, 0, .55); display: flex; align-items: flex-start; justify-content: center; padding: 24px 14px; overflow-y: auto; z-index: 10; }
+  .home-ov[hidden] { display: none; }
+  .home-box { background: #fff; border-radius: 14px; max-width: 460px; width: 100%; margin: auto; padding: 22px 20px; text-align: left; color: #4a2e14; box-shadow: 0 6px 20px rgba(0,0,0,.25); }
+  .home-box h2 { color: #e65100; text-align: center; margin: 0 0 6px; font-size: 1.35em; }
+  .home-lead { text-align: center; margin: 0 0 14px; color: #8a5a3a; }
+  .home-step { background: #fff8e1; border-radius: 10px; padding: 12px 14px; margin: 10px 0; line-height: 1.65; }
+  .home-step b { color: #e65100; }
+  .home-note { font-size: .88em; color: #8a5a3a; line-height: 1.6; margin: 12px 0 0; }
+  .home-close { display: block; margin: 16px auto 0; padding: 12px 40px; background: #ff6600; color: #fff; border: 0; border-radius: 999px; font: inherit; font-size: 1.1em; font-weight: bold; box-shadow: 0 4px 0 #bf4d00; cursor: pointer; }
+  .home-close:active { transform: translateY(3px); box-shadow: 0 1px 0 #bf4d00; }
 </style>
 </head>
 <body>
@@ -41,9 +58,36 @@
     <div class="sub-ttl">単体で使うとき</div>
     <a class="card sub" href="okane.html">💰 お金の計算だけ</a>
     <a class="card sub" href="saikoro.html">🎲 サイコロだけ</a>
+    <button class="card home" id="bHome" type="button">📲 ホーム画面に追加する方法</button>
   </div>
   <img class="dao-logo" src="dao-logo.png" alt="マネリテDAO">
 </div>
+<div class="home-ov" id="homeOv" hidden>
+  <div class="home-box" role="dialog" aria-label="ホーム画面に追加する方法">
+    <h2>ホーム画面に追加</h2>
+    <p class="home-lead">アイコンから、すぐにひらけるようになります。</p>
+    <div class="home-step"><b>iPhone（Safari）</b><br>
+      <b>①</b> 画面の下の共有ボタン（四角から矢印が上に出ているマーク）をタップ。見当たらないときは「…」の中にあります。<br>
+      <b>②</b>「ホーム画面に追加」をタップ。<br>
+      <b>③</b> 右上の「追加」をタップ。</div>
+    <div class="home-step"><b>Android（Chrome）</b><br>
+      <b>①</b> 右上の「︙」をタップ。<br>
+      <b>②</b>「ホーム画面に追加」をタップ（「アプリをインストール」と出ることもあります）。<br>
+      <b>③</b>「インストール」または「追加」をタップ。</div>
+    <p class="home-note">LINEなどのアプリの中で開いているときは、メニューの「ブラウザで開く」などで Safari／Chrome に切り替えてから追加してください。</p>
+    <button class="home-close" id="homeClose" type="button">とじる</button>
+  </div>
+</div>
+<script>
+// ホーム画面に追加する方法（2026-11-15）。ホーム画面のアイコンから開いているときはボタンを出さない
+(() => {
+  const btn = document.getElementById('bHome'), ov = document.getElementById('homeOv');
+  if (matchMedia('(display-mode: standalone)').matches || navigator.standalone) { btn.hidden = true; return; }
+  btn.onclick = () => { ov.hidden = false; ov.scrollTop = 0; };
+  document.getElementById('homeClose').onclick = () => { ov.hidden = true; };
+  ov.addEventListener('click', (e) => { if (e.target === ov) ov.hidden = true; });
+})();
+</script>
 <script>
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   navigator.serviceWorker.register('sw.js');
