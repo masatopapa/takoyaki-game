@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>印刷用ページ｜たこ焼き屋さんゲーム</title>
+<meta name="theme-color" content="#e64a19">
+<link rel="manifest" href="manifest.json?v=2">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=2">
+<link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png?v=2">
+<meta name="apple-mobile-web-app-title" content="たこ焼き">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+  /* 印刷用ページ（2026-11-16）。カードは表面・裏面を別々のPDFに分けてある */
+  body { font-family: sans-serif; background: #fff3e0; margin: 0; padding: 28px 16px 48px; color: #4a2e14; line-height: 1.65; }
+  .wrap { max-width: 680px; margin: 0 auto; }
+  h1 { color: #e65100; text-align: center; margin: 0 0 4px; font-size: 1.7em; }
+  .lead { text-align: center; color: #8a5a3a; margin: 0 0 18px; }
+  a.top { display: block; max-width: 300px; margin: 0 auto 22px; padding: 11px 16px; background: #fff; color: #bf360c; border: 2px solid #f3c9a8; border-radius: 12px; text-decoration: none; text-align: center; font-weight: bold; }
+  a.top:active { background: #ffe0b2; }
+  .box { background: #fff; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.12); padding: 18px 18px 16px; margin: 0 0 18px; }
+  .box h2 { color: #e65100; font-size: 1.25em; margin: 0 0 8px; }
+  .paper { background: #fff8e1; border-radius: 10px; padding: 10px 14px; margin: 0 0 12px; }
+  .paper b { color: #bf360c; }
+  .paper small { display: block; color: #8a5a3a; font-size: .85em; }
+  .btns { display: flex; flex-wrap: wrap; gap: 10px; }
+  a.pdf { flex: 1 1 220px; display: block; padding: 13px 16px; background: #ff6600; color: #fff; border-radius: 12px; text-decoration: none; text-align: center; font-weight: bold; font-size: 1.05em; box-shadow: 0 4px 0 #bf4d00; line-height: 1.35; }
+  a.pdf.back { background: #8d6e63; box-shadow: 0 4px 0 #5d4037; }
+  a.pdf:active { transform: translateY(3px); box-shadow: 0 1px 0 #bf4d00; }
+  a.pdf.back:active { box-shadow: 0 1px 0 #5d4037; }
+  a.pdf small { display: block; font-size: .72em; font-weight: normal; opacity: .95; margin-top: 3px; }
+  h3 { font-size: 1.05em; color: #a06000; margin: 18px 0 6px; }
+  ol { margin: 0; padding-left: 1.5em; }
+  ol li { margin-bottom: 6px; }
+  .warn { background: #fff3f0; border: 2px solid #ffab91; border-radius: 10px; padding: 10px 14px; margin: 14px 0 0; }
+  .warn b { color: #d84315; }
+  .note { font-size: .9em; color: #8a5a3a; margin: 10px 0 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>印刷用ページ</h1>
+  <p class="lead">実物のカードで遊ぶ（🃏 カード利用版）ときに使う、印刷用のPDFです。</p>
+  <a class="top" href="index.html">🏠 ゲームのトップへ</a>
+
+  <section class="box">
+    <h2>🃏 カード（120枚）</h2>
+    <div class="paper">用紙：<b>エーワン マルチカード 51275</b>（A4・名刺サイズ10面）を <b>12枚</b>
+      <small>10シート入りなので2パック要ります（両面に印刷できる名刺用紙です）。</small></div>
+    <div class="btns">
+      <a class="pdf" href="cards-front.pdf" target="_blank" rel="noopener">表面（絵柄）のPDF<small>12ページ</small></a>
+      <a class="pdf back" href="cards-back.pdf" target="_blank" rel="noopener">裏面（裏の柄）のPDF<small>12ページ</small></a>
+    </div>
+    <h3>印刷のしかた</h3>
+    <ol>
+      <li>倍率は <b>100%（実際のサイズ）</b>にします。「用紙に合わせる」にすると、ミシン目とずれます。</li>
+      <li>まず <b>表面</b> を12ページ印刷します。紙の上の余白に「表面 1 / 12」〜「表面 12 / 12」の番号が入ります。</li>
+      <li>印刷した紙を <b>1〜12の順</b> にそろえて、<b>左右に裏返します</b>（本のページをめくる向き）。番号のある上の辺は、はじめと同じ向きのままプリンターに入れなおします。</li>
+      <li><b>裏面</b> を12ページ印刷します。「表面 9 / 12」の裏に「裏面 9 / 12」がきて、どちらの番号も上の辺にあれば正しい向きです。</li>
+      <li>ミシン目で折って切り離します（番号のある余白は捨てます）。</li>
+    </ol>
+    <div class="warn"><b>はじめてのときは、普通紙で試し刷りを。</b>表面の9ページだけ印刷 → 裏返して裏面の9ページだけ印刷 → 光に透かして、「まほうの材料」の裏が材料カードの柄になっていればOKです。プリンターによって、印刷される面（上か下か）と紙を入れる向きがちがいます。</div>
+    <p class="note">・上下を逆に裏返すと、9ページ（まほうの材料とイベントカード）と11ページ（イベントカードと借金券）で、裏の柄がちがうカードができてしまいます。ほかのページは同じ種類のカードだけなので、裏の柄はそろいます。<br>
+      ・表と裏が1〜2mmずれることがあります（プリンターの紙送りのくせ）。裏の柄は白い地のまん中に絵があるだけなので、少しずれても遊ぶのに困りません。<br>
+      ・借金券とほけんカードは、裏面が無くても遊べます。</p>
+  </section>
+
+  <section class="box">
+    <h2>🍳 てっぱんシート</h2>
+    <div class="paper">普通紙 A4（横）・<b>1人1枚</b>（5人なら5部）</div>
+    <div class="btns"><a class="pdf" href="teppan-sheet.pdf" target="_blank" rel="noopener">てっぱんシートのPDF<small>1ページ</small></a></div>
+  </section>
+
+  <section class="box">
+    <h2>🎲 サイコロシート（すごろくボード）</h2>
+    <div class="paper">普通紙 A4（横）・1枚</div>
+    <div class="btns"><a class="pdf" href="saikoro-sheet.pdf" target="_blank" rel="noopener">サイコロシートのPDF<small>1ページ</small></a></div>
+  </section>
+
+  <section class="box">
+    <h2>📖 ルールブック</h2>
+    <div class="paper">普通紙 A4（たて）・2枚</div>
+    <div class="btns"><a class="pdf" href="rulebook.pdf" target="_blank" rel="noopener">ルールブックのPDF<small>2ページ・2026年9月21日版</small></a></div>
+  </section>
+
+  <a class="top" href="index.html">🏠 ゲームのトップへ</a>
+</div>
+<script>
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  navigator.serviceWorker.register('sw.js');
+}
+</script>
+</body>
+</html>
