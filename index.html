@@ -36,6 +36,12 @@
   .dao-box .dao-logo { margin-bottom: 12px; }
   a.dao-pdf { display: inline-block; padding: 10px 18px; background: #fff; color: #e65100; border: 2px solid #f0a000; border-radius: 999px; text-decoration: none; font-weight: bold; font-size: .95em; }
   a.dao-pdf:active { background: #ffe0b2; }
+  /* 印刷用PDF（2026-11-16。マネリテDAOの紹介の下） */
+  .print-links { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 300px; margin-top: 22px; }
+  .print-ttl { color: #a87d55; font-size: .9em; }
+  a.print-pdf { display: block; padding: 10px 14px; background: #fff; color: #e65100; border: 2px solid #f0a000; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: .95em; line-height: 1.35; }
+  a.print-pdf small { display: block; margin-top: 4px; font-size: .78em; font-weight: normal; color: #8a5a3a; line-height: 1.5; }
+  a.print-pdf:active { background: #ffe0b2; }
   /* ホーム画面に追加する方法（2026-11-15） */
   button.card.home { display: block; width: 100%; max-width: 440px; margin: 28px auto 18px; padding: 14px 16px; background: #fff; color: #a06000; border: 2px dashed #f0a000; border-radius: 12px; font: inherit; font-size: 1.02em; font-weight: bold; cursor: pointer; }
   button.card.home:active { background: #ffe0b2; }
@@ -68,6 +74,11 @@
   <div class="dao-box">
     <img class="dao-logo" src="dao-logo.png" alt="マネリテDAO">
     <a class="dao-pdf" href="https://masatopapa.github.io/jinsei-game/monelite-dao.pdf" target="_blank" rel="noopener">📄 マネリテDAOの紹介（PDF）</a>
+    <div class="print-links">
+      <div class="print-ttl">🖨 印刷して遊ぶとき</div>
+      <a class="print-pdf" href="cards-print.pdf" target="_blank" rel="noopener">🃏 カードの印刷用PDF<small>用紙：エーワン マルチカード 51275<br>（A4・名刺サイズ10面）×12枚＝120枚<br>両面印刷（長辺とじ）・倍率100%で印刷</small></a>
+      <a class="print-pdf" href="rulebook.pdf" target="_blank" rel="noopener">📖 ルールブックの印刷用PDF<small>普通紙 A4 × 2枚</small></a>
+    </div>
   </div>
 </div>
 <div class="home-ov" id="homeOv" hidden>
