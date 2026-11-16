@@ -320,6 +320,18 @@
   .result-settle{ background:#f3e5f5; color:#4a0072; border-radius:10px; padding:.7em 1em; margin-bottom:.8em; text-align:left; font-size:clamp(11px,1cqw,14px); line-height:1.6; }
   .r-detail{ flex-basis:100%; border-top:1px dotted #e6c9a8; margin-top:.15em; padding-top:.4em; font-size:clamp(10px,.95cqw,13px); color:#6d4c41; line-height:1.6; }
   .result-card .start-button{ margin-top:.5em; }
+  /* ===== 終了画面のマネリテDAO紹介（チラシ2面。画像は jinsei-game の dao-1.jpg／dao-2.jpg）2026-11-16 ===== */
+  .dao-intro { text-align:center; }
+  .dao-intro__h { font-size:clamp(16px,1.25rem,22px); line-height:1.5; margin:0 0 .7em; color:#E85D2F; font-weight:bold; }
+  .dao-intro__pages { display:grid; grid-template-columns:1fr; gap:14px; }
+  .dao-intro__pages a { display:block; line-height:0; border-radius:10px; overflow:hidden; border:2px solid #F0C27A; background:#fff; cursor:zoom-in; }
+  .dao-intro__pages img { display:block; width:100%; height:auto; }
+  .dao-intro__tip { font-size:13px; line-height:1.6; margin:.7em 0 .6em; color:#8A6A3A; font-weight:normal; }
+  .dao-intro__site { display:inline-block; padding:.6em 1.3em; border-radius:999px; background:#fff; color:#E85D2F; border:2px solid #F0A000; font-weight:bold; font-size:15px; text-decoration:none; }
+  .dao-intro{ margin-top:1.4em; padding-top:1.2em; border-top:2px dashed #f0c27a; }
+  .result-card.has-dao{ max-width:1100px; }
+  @container (min-width:900px){ .dao-intro__pages{ grid-template-columns:1fr 1fr; gap:18px; } }
+
 
   /* ===== サイコロ画面 ===== */
   #dice-area{ display:none; flex:1; min-height:0; flex-direction:column; align-items:center; justify-content:center; gap:1.4cqh; padding:1cqh 1cqw; }
@@ -583,11 +595,12 @@
 </div>
 
 <div id="resultOverlay">
-  <div class="result-card">
+  <div class="result-card has-dao">
     <h2>🏁 閉店！ 結果発表</h2>
     <div class="result-note">未返済の借金券は閉店のときに全部返します（1枚110円）。順位は、そのあとの所持金で決まります</div>
     <div id="resultList"></div>
     <button class="start-button" id="resultCloseBtn">とじる</button>
+    <div class="dao-intro"><h3 class="dao-intro__h">このゲームを作った「マネリテDAO」の紹介</h3><div class="dao-intro__pages"><a href="https://masatopapa.github.io/jinsei-game/dao-1.jpg" target="_blank" rel="noopener"><img src="https://masatopapa.github.io/jinsei-game/dao-1.jpg" width="1191" height="1685" loading="lazy" decoding="async" alt="マネリテDAOの紹介 1ページ目。小中高生のためのお金の授業、マネリテDAOの紹介、授業のポイント、参加者の声、授業実績"></a><a href="https://masatopapa.github.io/jinsei-game/dao-2.jpg" target="_blank" rel="noopener"><img src="https://masatopapa.github.io/jinsei-game/dao-2.jpg" width="1191" height="1685" loading="lazy" decoding="async" alt="マネリテDAOの紹介 2ページ目。こんなことが学べます、授業タイトルの一例、実際のスライド、教材・コンテンツの開発、お家でやってみようワーク"></a></div><p class="dao-intro__tip">画像をタップすると、大きくして見られます</p><a class="dao-intro__site" href="https://lit.link/monelitedao" target="_blank" rel="noopener">マネリテDAOの入り口はこちら</a></div>
   </div>
 </div>
 
